@@ -2,7 +2,7 @@ import GLShader from './GLShader';
 
 export class GLProgramError extends Error {}
 
-export class Program {
+export default class Program {
     private program: WebGLProgram;
     private readonly gl: WebGLRenderingContextBase;
 
