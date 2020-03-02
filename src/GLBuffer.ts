@@ -11,9 +11,14 @@ export default class GLBuffer {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
     }
 
-    bufferData(data: Array<number>): void {
+    floatBufferData(data: Array<number>): void {
         this.bind();
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(data), this.gl.STATIC_DRAW);
+    }
+
+    byteBufferData(data: Array<number>): void {
+        this.bind();
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Uint8Array(data), this.gl.STATIC_DRAW);
     }
 
     delete(): void {

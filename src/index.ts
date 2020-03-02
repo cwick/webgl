@@ -16,6 +16,9 @@ const vertexShaderSource = `#version 300 es
 // an attribute is an input (in) to a vertex shader.
 // It will receive data from a buffer
 in vec4 a_position;
+in vec4 a_color;
+
+out vec4 v_color;
  
 // all shaders have a main function
 void main() {
@@ -23,6 +26,7 @@ void main() {
   // gl_Position is a special variable a vertex shader
   // is responsible for setting
   gl_Position = a_position;
+  v_color = a_color;
 }
 `;
 
@@ -34,10 +38,10 @@ precision mediump float;
  
 // we need to declare an output for the fragment shader
 out vec4 outColor;
+in vec4 v_color;
  
 void main() {
-  // Just set the output to a constant reddish-purple
-  outColor = vec4(1, 0, 0.5, 1);
+  outColor = v_color;
 }
 `;
 
@@ -51,18 +55,35 @@ const program = new GLProgram(gl);
 program.link(vertexShader, fragmentShader);
 
 const positionAttributeLocation = program.getAttribLocation('a_position');
+const colorAttributeLocation = program.getAttribLocation('a_color');
 const positionBuffer = new GLBuffer(gl);
 
 // three 2d points
-positionBuffer.bufferData([0, 0, 0, 0.5, 0.7, 0]);
+positionBuffer.floatBufferData([0, 0, 0, 0.5, 0.7, 0]);
 
-const vao = new GLVertexArrayObject(gl, positionBuffer);
-gl.enableVertexAttribArray(positionAttributeLocation);
+const colorBuffer = new GLBuffer(gl);
+colorBuffer.byteBufferData([255, 0, 0, 0, 255, 0, 0, 0, 255]);
 
-const size = 2; // 2 components per iteration
-const stride = 0; // 0 = move forward size * sizeof(type) each iteration to get the next position
-const offset = 0; // start at the beginning of the buffer
-vao.vertexAttribPointer(positionAttributeLocation, size, stride, offset);
+const vao = new GLVertexArrayObject(gl);
+vao.vertexAttribPointer(
+    positionBuffer,
+    positionAttributeLocation,
+    2, // size
+    gl.FLOAT, // type,
+    false, // normalize,
+    0, // stride
+    0, // offset
+);
+
+vao.vertexAttribPointer(
+    colorBuffer,
+    colorAttributeLocation,
+    3, // size
+    gl.UNSIGNED_BYTE, // type,
+    true, // normalize,
+    0, // stride
+    0, // offset
+);
 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 // Clear the canvas
@@ -74,4 +95,4 @@ program.use();
 
 const primitiveType = gl.TRIANGLES;
 const count = 3;
-gl.drawArrays(primitiveType, offset, count);
+gl.drawArrays(primitiveType, 0, count);

@@ -3,25 +3,32 @@ import GLBuffer from './GLBuffer';
 export default class GLVertexArrayObject {
     private readonly glVertexArray: WebGLVertexArrayObject;
     private readonly gl: WebGL2RenderingContext;
-    private readonly buffer: GLBuffer;
 
-    constructor(gl: WebGL2RenderingContext, buffer: GLBuffer) {
+    constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
         this.glVertexArray = gl.createVertexArray();
-        this.buffer = buffer;
-        gl.bindVertexArray(this.glVertexArray);
-        buffer.bind();
     }
 
-    vertexAttribPointer(index: GLuint, size: GLint, stride: GLsizei, offset: GLintptr): void {
-        const type = this.gl.FLOAT;
-        const normalized = false;
+    bind(): void {
+        this.gl.bindVertexArray(this.glVertexArray);
+    }
+
+    vertexAttribPointer(
+        buffer: GLBuffer,
+        index: GLuint,
+        size: GLint,
+        type: number,
+        normalized: boolean,
+        stride: GLsizei,
+        offset: GLintptr,
+    ): void {
+        this.bind();
+        buffer.bind();
         this.gl.enableVertexAttribArray(index);
         this.gl.vertexAttribPointer(index, size, type, normalized, stride, offset);
     }
 
     delete(): void {
         this.gl.deleteVertexArray(this.glVertexArray);
-        this.buffer.delete();
     }
 }
