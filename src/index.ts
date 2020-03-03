@@ -2,6 +2,8 @@ import GLShader from './GLShader';
 import GLProgram from './GLProgram';
 import GLBuffer from './GLBuffer';
 import GLVertexArrayObject from './GLVertexArrayObject';
+import { mat4 } from 'gl-matrix';
+import { glMatrix } from 'gl-matrix';
 
 const canvasElement = document.createElement('canvas');
 canvasElement.width = 800;
@@ -19,16 +21,15 @@ const vertexShaderSource = `#version 300 es
 // It will receive data from a buffer
 in vec2 a_position;
 in vec4 a_color;
-uniform mat3 u_transform;
+uniform mat4 u_transform;
 
 out vec4 v_color;
  
 // all shaders have a main function
 void main() {
- 
   // gl_Position is a special variable a vertex shader
   // is responsible for setting
-  gl_Position = vec4(vec3(a_position,1) * u_transform, 1);
+  gl_Position = u_transform * vec4(a_position,0,1);
   
   v_color = a_color;
 }
@@ -119,7 +120,17 @@ vao.vertexAttribPointer(
 );
 
 program.use();
-gl.uniformMatrix3fv(transformLocation, false, [0.25, 0, -1, 0, 0.25, -1, 0, 0, 1]);
+const transform = mat4.fromTranslation(mat4.create(), [-4, -4, -16]);
+mat4.multiply(transform, transform, mat4.fromXRotation(mat4.create(), glMatrix.toRadian(-45)));
+
+const perspective = mat4.perspective(
+    mat4.create(),
+    glMatrix.toRadian(45 * (gl.canvas.height / gl.canvas.width)),
+    gl.canvas.width / gl.canvas.height,
+    0.1,
+    100,
+);
+gl.uniformMatrix4fv(transformLocation, false, mat4.multiply(mat4.create(), perspective, transform));
 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 // Clear the canvas

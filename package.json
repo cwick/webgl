@@ -18,5 +18,9 @@
   },
   "scripts": {
     "start": "webpack-dev-server"
+  },
+  "dependencies": {
+    "@types/gl-matrix": "^2.4.5",
+    "gl-matrix": "^3.2.1"
   }
 }
