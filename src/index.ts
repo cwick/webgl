@@ -4,6 +4,8 @@ import GLBuffer from './GLBuffer';
 import GLVertexArrayObject from './GLVertexArrayObject';
 
 const canvasElement = document.createElement('canvas');
+canvasElement.width = 800;
+canvasElement.height = 600;
 document.body.append(canvasElement);
 
 const gl = canvasElement.getContext('webgl2');
@@ -15,8 +17,9 @@ const vertexShaderSource = `#version 300 es
  
 // an attribute is an input (in) to a vertex shader.
 // It will receive data from a buffer
-in vec4 a_position;
+in vec2 a_position;
 in vec4 a_color;
+uniform mat3 u_transform;
 
 out vec4 v_color;
  
@@ -25,7 +28,8 @@ void main() {
  
   // gl_Position is a special variable a vertex shader
   // is responsible for setting
-  gl_Position = a_position;
+  gl_Position = vec4(vec3(a_position,1) * u_transform, 1);
+  
   v_color = a_color;
 }
 `;
@@ -56,13 +60,42 @@ program.link(vertexShader, fragmentShader);
 
 const positionAttributeLocation = program.getAttribLocation('a_position');
 const colorAttributeLocation = program.getAttribLocation('a_color');
+const transformLocation = program.getUniformLocation('u_transform');
+const positionData: number[] = [];
+const colorData: number[] = [];
+
+function randomColor(): number {
+    return Math.round(Math.random() * 255);
+}
+
+for (let row = 0; row < 8; row++) {
+    for (let column = 0; column < 8; column++) {
+        // Make a square
+        positionData.push(
+            row,
+            column,
+            row + 1,
+            column,
+            row + 1,
+            column + 1,
+            row,
+            column,
+            row + 1,
+            column + 1,
+            row,
+            column + 1,
+        );
+        // Color the square
+        for (let i = 0; i < 6; i++) {
+            colorData.push(randomColor(), randomColor(), randomColor());
+        }
+    }
+}
+
 const positionBuffer = new GLBuffer(gl);
-
-// three 2d points
-positionBuffer.floatBufferData([0, 0, 0, 0.5, 0.7, 0]);
-
 const colorBuffer = new GLBuffer(gl);
-colorBuffer.byteBufferData([255, 0, 0, 0, 255, 0, 0, 0, 255]);
+positionBuffer.floatBufferData(positionData);
+colorBuffer.byteBufferData(colorData);
 
 const vao = new GLVertexArrayObject(gl);
 vao.vertexAttribPointer(
@@ -84,15 +117,15 @@ vao.vertexAttribPointer(
     0, // stride
     0, // offset
 );
+
+program.use();
+gl.uniformMatrix3fv(transformLocation, false, [0.25, 0, -1, 0, 0.25, -1, 0, 0, 1]);
 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 // Clear the canvas
 gl.clearColor(0, 0, 0, 1);
 gl.clear(gl.COLOR_BUFFER_BIT);
 
-// Tell it to use our program (pair of shaders)
-program.use();
-
 const primitiveType = gl.TRIANGLES;
-const count = 3;
+const count = positionData.length / 2;
 gl.drawArrays(primitiveType, 0, count);
