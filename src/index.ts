@@ -17,20 +17,15 @@ if (!gl) {
 
 const vertexShaderSource = `#version 300 es
  
-// an attribute is an input (in) to a vertex shader.
-// It will receive data from a buffer
 in vec2 a_position;
 in vec4 a_color;
 uniform mat4 u_transform;
+uniform mat4 u_projection;
 
 out vec4 v_color;
  
-// all shaders have a main function
 void main() {
-  // gl_Position is a special variable a vertex shader
-  // is responsible for setting
-  gl_Position = u_transform * vec4(a_position,0,1);
-  
+  gl_Position = u_projection * u_transform * vec4(a_position,0,1);
   v_color = a_color;
 }
 `;
@@ -41,12 +36,12 @@ const fragmentShaderSource = `#version 300 es
 // to pick one. mediump is a good default. It means "medium precision"
 precision mediump float;
  
-// we need to declare an output for the fragment shader
 out vec4 outColor;
 in vec4 v_color;
  
 void main() {
-  outColor = v_color;
+    outColor = vec4(gl_FragCoord.x / 800.0, gl_FragCoord.y / 600.0, 1, 1.0);
+//   outColor = v_color;
 }
 `;
 
@@ -62,6 +57,7 @@ program.link(vertexShader, fragmentShader);
 const positionAttributeLocation = program.getAttribLocation('a_position');
 const colorAttributeLocation = program.getAttribLocation('a_color');
 const transformLocation = program.getUniformLocation('u_transform');
+const projectionLocation = program.getUniformLocation('u_projection');
 const positionData: number[] = [];
 const colorData: number[] = [];
 
@@ -120,8 +116,9 @@ vao.vertexAttribPointer(
 );
 
 program.use();
-const transform = mat4.fromTranslation(mat4.create(), [-4, -4, -16]);
-mat4.multiply(transform, transform, mat4.fromXRotation(mat4.create(), glMatrix.toRadian(-45)));
+const transform = mat4.fromTranslation(mat4.create(), [-4, -4, 0]);
+mat4.multiply(transform, mat4.fromXRotation(mat4.create(), glMatrix.toRadian(-55)), transform);
+mat4.multiply(transform, mat4.fromTranslation(mat4.create(), [0, 0, -15]), transform);
 
 const perspective = mat4.perspective(
     mat4.create(),
@@ -130,7 +127,8 @@ const perspective = mat4.perspective(
     0.1,
     100,
 );
-gl.uniformMatrix4fv(transformLocation, false, mat4.multiply(mat4.create(), perspective, transform));
+gl.uniformMatrix4fv(transformLocation, false, transform);
+gl.uniformMatrix4fv(projectionLocation, false, perspective);
 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
 // Clear the canvas
