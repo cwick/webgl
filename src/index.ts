@@ -116,9 +116,6 @@ vao.vertexAttribPointer(
 );
 
 program.use();
-const transform = mat4.fromTranslation(mat4.create(), [-4, -4, 0]);
-mat4.multiply(transform, mat4.fromXRotation(mat4.create(), glMatrix.toRadian(-55)), transform);
-mat4.multiply(transform, mat4.fromTranslation(mat4.create(), [0, 0, -15]), transform);
 
 const perspective = mat4.perspective(
     mat4.create(),
@@ -127,14 +124,29 @@ const perspective = mat4.perspective(
     0.1,
     100,
 );
-gl.uniformMatrix4fv(transformLocation, false, transform);
 gl.uniformMatrix4fv(projectionLocation, false, perspective);
 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-// Clear the canvas
 gl.clearColor(0, 0, 0, 1);
-gl.clear(gl.COLOR_BUFFER_BIT);
 
-const primitiveType = gl.TRIANGLES;
-const count = positionData.length / 2;
-gl.drawArrays(primitiveType, 0, count);
+let rotation = 0;
+let lastTime: DOMHighResTimeStamp = null;
+
+function render(currentTime: DOMHighResTimeStamp): void {
+    rotation += lastTime ? (currentTime - lastTime) * 0.1 : 0;
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const transform = mat4.fromTranslation(mat4.create(), [-4, -4, 0]);
+    mat4.multiply(transform, mat4.fromXRotation(mat4.create(), glMatrix.toRadian(rotation)), transform);
+    mat4.multiply(transform, mat4.fromTranslation(mat4.create(), [0, 0, -15]), transform);
+    gl.uniformMatrix4fv(transformLocation, false, transform);
+
+    const primitiveType = gl.TRIANGLES;
+    const count = positionData.length / 2;
+    gl.drawArrays(primitiveType, 0, count);
+
+    lastTime = currentTime;
+    requestAnimationFrame(render);
+}
+
+render(performance.now());
