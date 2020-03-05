@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '*.gltf' {
     const content: GlTf;
     export default content;
