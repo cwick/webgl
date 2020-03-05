@@ -1,9 +1,10 @@
-import GLShader from './GLShader';
-import GLProgram from './GLProgram';
-import GLBuffer from './GLBuffer';
-import GLVertexArrayObject from './GLVertexArrayObject';
+import GLShader from './webgl/GLShader';
+import GLProgram from './webgl/GLProgram';
+import GLBuffer from './webgl/GLBuffer';
+import GLVertexArrayObject from './webgl/GLVertexArrayObject';
 import { mat4 } from 'gl-matrix';
 import { glMatrix } from 'gl-matrix';
+import GLTFLoader from './GLTFLoader';
 
 const canvasElement = document.createElement('canvas');
 canvasElement.width = 800;
@@ -148,5 +149,7 @@ function render(currentTime: DOMHighResTimeStamp): void {
     lastTime = currentTime;
     requestAnimationFrame(render);
 }
+
+new GLTFLoader().load();
 
 render(performance.now());
