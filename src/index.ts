@@ -11,10 +11,14 @@ canvasElement.width = 800;
 canvasElement.height = 600;
 document.body.append(canvasElement);
 
-const gl = canvasElement.getContext('webgl2');
-if (!gl) {
-    console.error('WebGL 2.0 not available');
+function getGLContext(): WebGL2RenderingContext {
+    const gl = canvasElement.getContext('webgl2');
+    if (!gl) {
+        throw new Error('WebGL 2.0 not available');
+    }
+    return gl;
 }
+const gl = getGLContext();
 
 const vertexShaderSource = `#version 300 es
  
@@ -130,7 +134,7 @@ gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 gl.clearColor(0, 0, 0, 1);
 
 let rotation = 0;
-let lastTime: DOMHighResTimeStamp = null;
+let lastTime: DOMHighResTimeStamp | null = null;
 
 function render(currentTime: DOMHighResTimeStamp): void {
     rotation += lastTime ? (currentTime - lastTime) * 0.1 : 0;

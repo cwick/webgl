@@ -6,7 +6,11 @@ export default class GLVertexArrayObject {
 
     constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
-        this.glVertexArray = gl.createVertexArray();
+        const vertexArray = gl.createVertexArray();
+        if (!vertexArray) {
+            throw new Error('Error creating GL Vertex Array Object');
+        }
+        this.glVertexArray = vertexArray;
     }
 
     bind(): void {

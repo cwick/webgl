@@ -3,6 +3,7 @@
         "sourceMap": true,
         "noImplicitAny": true,
         "target": "ES2018",
-        "moduleResolution": "node"
+        "moduleResolution": "node",
+        "strictNullChecks": true
     }
 }

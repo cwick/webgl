@@ -3,22 +3,19 @@ import GLShader from './GLShader';
 export class GLProgramError extends Error {}
 
 export default class Program {
-    private program: WebGLProgram;
+    private readonly program: WebGLProgram;
     private readonly gl: WebGLRenderingContextBase;
 
     constructor(gl: WebGLRenderingContextBase) {
         this.gl = gl;
-    }
-
-    create(): void {
-        if (!this.program) {
-            this.program = this.gl.createProgram();
+        const program = this.gl.createProgram();
+        if (!program) {
+            throw new Error('Error creating GL program');
         }
+        this.program = program;
     }
 
     link(...shaders: GLShader[]): void {
-        this.create();
-
         shaders.forEach(s => {
             if (s.glShader) {
                 this.gl.attachShader(this.program, s.glShader);
@@ -30,7 +27,7 @@ export default class Program {
 
         const success = this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS);
         if (!success) {
-            let message = this.gl.getProgramInfoLog(this.program);
+            let message = this.gl.getProgramInfoLog(this.program) ?? '';
             if (message.length === 0) {
                 message = 'Unknown error while linking program';
             }
@@ -49,14 +46,11 @@ export default class Program {
         return this.gl.getAttribLocation(this.program, name);
     }
 
-    getUniformLocation(name: string): WebGLUniformLocation {
+    getUniformLocation(name: string): WebGLUniformLocation | null {
         return this.gl.getUniformLocation(this.program, name);
     }
 
     delete(): void {
-        if (this.program) {
-            this.gl.deleteProgram(this.program);
-            this.program = null;
-        }
+        this.gl.deleteProgram(this.program);
     }
 }

@@ -3,7 +3,11 @@ export default class GLBuffer {
     private readonly gl: WebGL2RenderingContext;
 
     constructor(gl: WebGL2RenderingContext) {
-        this.glBuffer = gl.createBuffer();
+        const buffer = gl.createBuffer();
+        if (!buffer) {
+            throw new Error('Error creating GL buffer');
+        }
+        this.glBuffer = buffer;
         this.gl = gl;
     }
 
