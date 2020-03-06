@@ -1,33 +1,59 @@
-import example from 'assets/example.gltf';
+import example, { GlTfId } from 'assets/example.gltf';
+import { Mesh, BufferView, BufferTarget, Accessor, PrimitiveAttributes } from './Mesh';
 
 export default class GLTFLoader {
-    load(): void {
+    async load(): Promise<Mesh> {
         const version = example.asset.version;
         if (!version.startsWith('2.')) {
             this.notSupported(`glTF version ${version} not supported.`);
         }
-
-        if (!example.meshes?.[0].primitives.length) {
-            return;
-        }
-
-        example.buffers?.forEach(async (buffer, i) => {
+        const bufferPromises = example.buffers?.map((buffer, i) => {
             if (!buffer.uri) {
                 this.invalid(`missing buffer uri for buffer ${i}`);
             }
-            console.log(await this.loadBufferFromURI(buffer.uri));
+            return this.loadBufferFromURI(buffer.uri);
         });
+        const buffers = await Promise.all(bufferPromises ?? []);
+        const bufferViews: Array<BufferView> =
+            example.bufferViews?.map(view =>
+                Object.assign(view, {
+                    buffer: buffers[view.buffer],
+                    target: view.target ?? BufferTarget.ARRAY_BUFFER,
+                }),
+            ) ?? [];
+        const accessors: Array<Accessor> =
+            example.accessors?.map(accessor =>
+                Object.assign(accessor, { bufferView: bufferViews[accessor.bufferView ?? 0] }),
+            ) ?? [];
+        const meshes: Array<Mesh> =
+            example.meshes?.map(mesh => ({
+                primitives: mesh.primitives.map(primitive => ({
+                    indices: primitive.indices != null ? accessors[primitive.indices] : null,
+                    attributes: this.mapPrimitiveAttributes(primitive.attributes, accessors),
+                })),
+            })) ?? [];
+        return meshes[0];
     }
-
+    private mapPrimitiveAttributes(
+        attributes: {
+            [k: string]: GlTfId;
+        },
+        accessors: Array<Accessor>,
+    ): PrimitiveAttributes {
+        return Object.fromEntries(
+            Object.entries(attributes).map(([attribute, accessorIndex]) => [
+                attribute,
+                accessors[accessorIndex],
+            ]),
+        );
+    }
     private async loadBufferFromURI(uri: string): Promise<ArrayBuffer> {
         const response = await fetch(uri);
         return await response.arrayBuffer();
     }
-
     private notSupported(message: string): never {
         throw new Error(message);
     }
-
     private invalid(message: string): never {
         throw new Error(`Invalid glTF file: ${message}`);
     }

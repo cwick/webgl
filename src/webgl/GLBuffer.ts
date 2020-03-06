@@ -1,3 +1,4 @@
+// TODO: delete this class
 export default class GLBuffer {
     private readonly glBuffer: WebGLBuffer;
     private readonly gl: WebGL2RenderingContext;

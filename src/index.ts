@@ -5,6 +5,7 @@ import GLVertexArrayObject from './webgl/GLVertexArrayObject';
 import { mat4 } from 'gl-matrix';
 import { glMatrix } from 'gl-matrix';
 import GLTFLoader from './GLTFLoader';
+import WebGLRenderer from './webgl/WebGLRenderer';
 
 const canvasElement = document.createElement('canvas');
 canvasElement.width = 800;
@@ -142,7 +143,11 @@ function render(currentTime: DOMHighResTimeStamp): void {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const transform = mat4.fromTranslation(mat4.create(), [-4, -4, 0]);
-    mat4.multiply(transform, mat4.fromXRotation(mat4.create(), glMatrix.toRadian(rotation)), transform);
+    mat4.multiply(
+        transform,
+        mat4.fromXRotation(mat4.create(), glMatrix.toRadian(rotation)),
+        transform,
+    );
     mat4.multiply(transform, mat4.fromTranslation(mat4.create(), [0, 0, -15]), transform);
     gl.uniformMatrix4fv(transformLocation, false, transform);
 
@@ -154,6 +159,9 @@ function render(currentTime: DOMHighResTimeStamp): void {
     requestAnimationFrame(render);
 }
 
-new GLTFLoader().load();
+new GLTFLoader().load().then(mesh => {
+    console.log(mesh);
+    new WebGLRenderer(gl).render(mesh);
+});
 
 render(performance.now());
