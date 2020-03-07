@@ -141,6 +141,8 @@ function render(currentTime: DOMHighResTimeStamp): void {
     rotation += lastTime ? (currentTime - lastTime) * 0.1 : 0;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
+    program.use();
+    vao.bind();
 
     const transform = mat4.fromTranslation(mat4.create(), [-4, -4, 0]);
     mat4.multiply(

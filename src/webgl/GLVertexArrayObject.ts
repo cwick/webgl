@@ -1,5 +1,6 @@
 import GLBuffer from './GLBuffer';
 
+// TODO: delete class?
 export default class GLVertexArrayObject {
     private readonly glVertexArray: WebGLVertexArrayObject;
     private readonly gl: WebGL2RenderingContext;

@@ -1,5 +1,12 @@
 import example, { GlTfId } from 'assets/example.gltf';
-import { Mesh, BufferView, BufferTarget, Accessor, PrimitiveAttributes } from './Mesh';
+import {
+    Mesh,
+    BufferView,
+    BufferTarget,
+    Accessor,
+    PrimitiveAttributes,
+    AttributeType,
+} from './Mesh';
 
 export default class GLTFLoader {
     async load(): Promise<Mesh> {
@@ -19,21 +26,28 @@ export default class GLTFLoader {
                 Object.assign(view, {
                     buffer: buffers[view.buffer],
                     target: view.target ?? BufferTarget.ARRAY_BUFFER,
+                    byteStride: view.byteStride ?? 0,
+                    byteOffset: view.byteOffset ?? 0,
                 }),
             ) ?? [];
         const accessors: Array<Accessor> =
             example.accessors?.map(accessor =>
-                Object.assign(accessor, { bufferView: bufferViews[accessor.bufferView ?? 0] }),
+                Object.assign(accessor, {
+                    bufferView: bufferViews[accessor.bufferView ?? 0],
+                    type: AttributeType[accessor.type as keyof typeof AttributeType],
+                    normalized: accessor.normalized ?? false,
+                }),
             ) ?? [];
         const meshes: Array<Mesh> =
             example.meshes?.map(mesh => ({
                 primitives: mesh.primitives.map(primitive => ({
-                    indices: primitive.indices != null ? accessors[primitive.indices] : null,
+                    indices: primitive.indices != null ? accessors[primitive.indices] : undefined,
                     attributes: this.mapPrimitiveAttributes(primitive.attributes, accessors),
                 })),
             })) ?? [];
         return meshes[0];
     }
+
     private mapPrimitiveAttributes(
         attributes: {
             [k: string]: GlTfId;
@@ -47,13 +61,16 @@ export default class GLTFLoader {
             ]),
         );
     }
+
     private async loadBufferFromURI(uri: string): Promise<ArrayBuffer> {
         const response = await fetch(uri);
         return await response.arrayBuffer();
     }
+
     private notSupported(message: string): never {
         throw new Error(message);
     }
+
     private invalid(message: string): never {
         throw new Error(`Invalid glTF file: ${message}`);
     }
