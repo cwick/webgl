@@ -61,7 +61,7 @@ export default class WebGLRenderer {
                 primitive.mode,
                 primitive.indices.count,
                 primitive.indices.componentType,
-                primitive.indices.byteOffset + primitive.indices.bufferView.byteOffset,
+                primitive.indices.byteOffset,
             );
         }
     }

@@ -6,6 +6,8 @@ import { mat4 } from 'gl-matrix';
 import { glMatrix } from 'gl-matrix';
 import GLTFLoader from './GLTFLoader';
 import WebGLRenderer from './webgl/WebGLRenderer';
+import example from '../assets/example.gltf';
+import box from '../assets/box.gltf';
 
 const canvasElement = document.createElement('canvas');
 canvasElement.width = 800;
@@ -162,7 +164,7 @@ function render(currentTime: DOMHighResTimeStamp): void {
 }
 
 gl.clear(gl.COLOR_BUFFER_BIT);
-new GLTFLoader().load().then(mesh => {
+new GLTFLoader().load(box).then(mesh => {
     console.log(mesh);
     new WebGLRenderer(gl).render(mesh);
 });

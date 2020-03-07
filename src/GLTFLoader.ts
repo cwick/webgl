@@ -1,4 +1,3 @@
-import example, { GlTfId } from 'assets/example.gltf';
 import {
     Mesh,
     BufferView,
@@ -8,14 +7,15 @@ import {
     AttributeType,
     PrimitiveMode,
 } from './Mesh';
+import { GlTf } from '*.gltf';
 
 export default class GLTFLoader {
-    async load(): Promise<Mesh> {
-        const version = example.asset.version;
+    async load(gltfFile: GlTf): Promise<Mesh> {
+        const version = gltfFile.asset.version;
         if (!version.startsWith('2.')) {
             this.notSupported(`glTF version ${version} not supported.`);
         }
-        const bufferPromises = example.buffers?.map((buffer, i) => {
+        const bufferPromises = gltfFile.buffers?.map((buffer, i) => {
             if (!buffer.uri) {
                 this.invalid(`missing buffer uri for buffer ${i}`);
             }
@@ -23,7 +23,7 @@ export default class GLTFLoader {
         });
         const buffers = await Promise.all(bufferPromises ?? []);
         const bufferViews: Array<BufferView> =
-            example.bufferViews?.map(view =>
+            gltfFile.bufferViews?.map(view =>
                 Object.assign(view, {
                     buffer: buffers[view.buffer],
                     target: view.target ?? BufferTarget.ARRAY_BUFFER,
@@ -32,7 +32,7 @@ export default class GLTFLoader {
                 }),
             ) ?? [];
         const accessors: Array<Accessor> =
-            example.accessors?.map(accessor =>
+            gltfFile.accessors?.map(accessor =>
                 Object.assign(accessor, {
                     bufferView: bufferViews[accessor.bufferView ?? 0],
                     type: AttributeType[accessor.type as keyof typeof AttributeType],
@@ -41,7 +41,7 @@ export default class GLTFLoader {
                 }),
             ) ?? [];
         const meshes: Array<Mesh> =
-            example.meshes?.map(mesh => ({
+            gltfFile.meshes?.map(mesh => ({
                 primitives: mesh.primitives.map(primitive => ({
                     indices: primitive.indices != null ? accessors[primitive.indices] : undefined,
                     attributes: this.mapPrimitiveAttributes(primitive.attributes, accessors),
@@ -53,7 +53,7 @@ export default class GLTFLoader {
 
     private mapPrimitiveAttributes(
         attributes: {
-            [k: string]: GlTfId;
+            [k: string]: number;
         },
         accessors: Array<Accessor>,
     ): PrimitiveAttributes {
