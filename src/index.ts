@@ -11,6 +11,13 @@ canvasElement.width = 800;
 canvasElement.height = 600;
 document.body.append(canvasElement);
 
+async function fetchModelIndex(): Promise<Array<object>> {
+    const response = await fetch(
+        'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/model-index.json',
+    );
+    return response.json();
+}
+
 function getGLContext(): WebGL2RenderingContext {
     const gl = canvasElement.getContext('webgl2');
     if (!gl) {
@@ -47,3 +54,22 @@ function render3(mesh: Mesh): void {
 new GLTFLoader().load(box).then(mesh => {
     render3(mesh);
 });
+
+(async (): Promise<void> => {
+    const modelIndex = await fetchModelIndex();
+    const select = document.createElement('select');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    modelIndex
+        .filter((e: { variants: { [s: string]: object } }) => Boolean(e.variants['glTF-Embedded']))
+        .map((e: { name: string }) => {
+            const option = document.createElement('option');
+            option.value = e.name;
+            option.innerHTML = option.value;
+            return option;
+        })
+        .forEach(option => {
+            select.appendChild(option);
+        });
+
+    document.body.appendChild(select);
+})();
