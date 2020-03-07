@@ -6,6 +6,7 @@ import {
     Accessor,
     PrimitiveAttributes,
     AttributeType,
+    PrimitiveMode,
 } from './Mesh';
 
 export default class GLTFLoader {
@@ -36,6 +37,7 @@ export default class GLTFLoader {
                     bufferView: bufferViews[accessor.bufferView ?? 0],
                     type: AttributeType[accessor.type as keyof typeof AttributeType],
                     normalized: accessor.normalized ?? false,
+                    byteOffset: accessor.byteOffset ?? 0,
                 }),
             ) ?? [];
         const meshes: Array<Mesh> =
@@ -43,6 +45,7 @@ export default class GLTFLoader {
                 primitives: mesh.primitives.map(primitive => ({
                     indices: primitive.indices != null ? accessors[primitive.indices] : undefined,
                     attributes: this.mapPrimitiveAttributes(primitive.attributes, accessors),
+                    mode: primitive.mode ?? PrimitiveMode.TRIANGLES,
                 })),
             })) ?? [];
         return meshes[0];

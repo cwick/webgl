@@ -1,6 +1,7 @@
 import { Mesh, MeshPrimitive, PrimitiveAttributes } from '../Mesh';
 import GLProgram from './GLProgram';
 import GLShader from './GLShader';
+import { mat4, glMatrix } from 'gl-matrix';
 
 const vertexShaderSource = `#version 300 es
  
@@ -36,6 +37,8 @@ export default class WebGLRenderer {
         vertexShader.compile(vertexShaderSource);
         fragmentShader.compile(fragmentShaderSource);
         this.glProgram.link(vertexShader, fragmentShader);
+
+        this.setMatrices();
     }
 
     render(mesh: Mesh): void {
@@ -51,6 +54,15 @@ export default class WebGLRenderer {
     private renderPrimitive(primitive: MeshPrimitive): void {
         if (!this.builtPrimitives.has(primitive)) {
             this.buildPrimitive(primitive);
+        }
+
+        if (primitive.indices) {
+            this.gl.drawElements(
+                primitive.mode,
+                primitive.indices.count,
+                primitive.indices.componentType,
+                primitive.indices.byteOffset + primitive.indices.bufferView.byteOffset,
+            );
         }
     }
 
@@ -110,8 +122,24 @@ export default class WebGLRenderer {
                 accessor.componentType,
                 accessor.normalized,
                 accessor.bufferView.byteStride,
-                accessor.bufferView.byteOffset,
+                accessor.bufferView.byteOffset + accessor.byteOffset,
             );
         });
+    }
+
+    private setMatrices(): void {
+        const gl = this.gl;
+        this.glProgram.use();
+        const perspective = mat4.perspective(
+            mat4.create(),
+            glMatrix.toRadian(45 * (gl.canvas.height / gl.canvas.width)),
+            gl.canvas.width / gl.canvas.height,
+            0.1,
+            100,
+        );
+        gl.uniformMatrix4fv(this.glProgram.getUniformLocation('u_projection'), false, perspective);
+
+        const transform = mat4.fromTranslation(mat4.create(), [0, 0, -6]);
+        gl.uniformMatrix4fv(this.glProgram.getUniformLocation('u_transform'), false, transform);
     }
 }

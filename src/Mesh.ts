@@ -5,6 +5,7 @@ export interface Mesh {
 export interface MeshPrimitive {
     readonly indices?: Accessor;
     readonly attributes: PrimitiveAttributes;
+    readonly mode: PrimitiveMode;
 }
 
 export interface PrimitiveAttributes {
@@ -16,6 +17,8 @@ export interface Accessor {
     readonly componentType: ComponentType;
     readonly type: AttributeType;
     readonly normalized: boolean;
+    readonly count: number;
+    readonly byteOffset: number;
 }
 
 export interface BufferView {
@@ -45,4 +48,14 @@ export enum AttributeType {
 export enum BufferTarget {
     ARRAY_BUFFER = 34962,
     ELEMENT_ARRAY_BUFFER = 34963,
+}
+
+export enum PrimitiveMode {
+    POINTS = 0,
+    LINES = 1,
+    LINE_LOOP = 2,
+    LINE_STRIP = 3,
+    TRIANGLES = 4,
+    TRIANGLE_STRIP = 5,
+    TRIANGLE_FAN = 6,
 }

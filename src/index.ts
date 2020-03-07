@@ -161,9 +161,10 @@ function render(currentTime: DOMHighResTimeStamp): void {
     requestAnimationFrame(render);
 }
 
+gl.clear(gl.COLOR_BUFFER_BIT);
 new GLTFLoader().load().then(mesh => {
     console.log(mesh);
     new WebGLRenderer(gl).render(mesh);
 });
 
-render(performance.now());
+// render(performance.now());
