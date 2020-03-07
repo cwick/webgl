@@ -35,25 +35,24 @@ let lastTime: DOMHighResTimeStamp | null = null;
 
 const renderer = new WebGLRenderer(gl);
 renderer.wireframe = true;
+let mesh: Mesh;
 
-function render3(mesh: Mesh): void {
+(function(): void {
     const transform = mat4.create();
-    function render2(currentTime: DOMHighResTimeStamp): void {
+    function render(currentTime: DOMHighResTimeStamp): void {
         rotation += lastTime ? (currentTime - lastTime) * 0.01 : 0;
 
         mat4.fromYRotation(transform, glMatrix.toRadian(rotation));
-        renderer.render(mesh, transform);
+        if (mesh) {
+            renderer.render(mesh, transform);
+        }
 
         lastTime = currentTime;
-        requestAnimationFrame(render2);
+        requestAnimationFrame(render);
     }
 
-    render2(performance.now());
-}
-
-new GLTFLoader().load(box).then(mesh => {
-    render3(mesh);
-});
+    render(performance.now());
+})();
 
 (async (): Promise<void> => {
     const modelIndex = await fetchModelIndex();
@@ -71,5 +70,14 @@ new GLTFLoader().load(box).then(mesh => {
             select.appendChild(option);
         });
 
+    select.addEventListener('change', async () => {
+        const name = select.selectedOptions[0].value;
+        const file = await fetch(
+            `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${name}/glTF-Embedded/${name}.gltf`,
+        );
+        new GLTFLoader().load(await file.json()).then(m => {
+            mesh = m;
+        });
+    });
     document.body.appendChild(select);
 })();
