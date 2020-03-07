@@ -44,7 +44,6 @@ export default class WebGLRenderer {
 
     public wireframe = false;
     private builtPrimitives: Set<MeshPrimitive> = new Set();
-    private glBuffers: Map<ArrayBuffer, WebGLBuffer> = new Map();
     private gl: WebGL2RenderingContext;
     private glProgram: GLProgram;
     private userTransform: mat4;
@@ -167,16 +166,13 @@ export default class WebGLRenderer {
             const buffer = accessor.bufferView.buffer;
 
             // Create and upload vertex data to GL buffer
-            if (!this.glBuffers.has(buffer)) {
-                const glBuffer = this.gl.createBuffer();
-                if (!glBuffer) {
-                    throw new Error('Error creating GL buffer');
-                }
-                this.glBuffers.set(buffer, glBuffer);
-
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
+            const glBuffer = this.gl.createBuffer();
+            if (!glBuffer) {
+                throw new Error('Error creating GL buffer');
             }
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
 
             const glAttributeLocation = this.glProgram.getAttribLocation(attribute);
             this.gl.enableVertexAttribArray(glAttributeLocation);
