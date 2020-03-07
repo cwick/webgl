@@ -1,8 +1,9 @@
-import { Mesh, MeshPrimitive, PrimitiveAttributes } from '../Mesh';
+import { Mesh, MeshPrimitive, PrimitiveAttributes, ComponentType } from '../Mesh';
 import GLProgram from './GLProgram';
 import GLShader from './GLShader';
 import { mat4, glMatrix } from 'gl-matrix';
 
+type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Uint32Array | Float32Array;
 const vertexShaderSource = `#version 300 es
  
 in vec3 POSITION;
@@ -41,14 +42,6 @@ export default class WebGLRenderer {
         this.glProjectionLocation = this.getUniformLocation('u_projection');
     }
 
-    render(mesh: Mesh, transform: mat4): void {
-        this.userTransform = transform;
-        this.glProgram.use();
-        this.setMatrices();
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        mesh.primitives.forEach(p => this.renderPrimitive(p));
-    }
-
     public wireframe = false;
     private builtPrimitives: Set<MeshPrimitive> = new Set();
     private glBuffers: Map<ArrayBuffer, WebGLBuffer> = new Map();
@@ -58,18 +51,25 @@ export default class WebGLRenderer {
     private glTransformLocation: WebGLUniformLocation;
     private glProjectionLocation: WebGLUniformLocation;
 
+    render(mesh: Mesh, transform: mat4): void {
+        this.userTransform = transform;
+        this.glProgram.use();
+        this.setMatrices();
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        mesh.primitives.forEach(p => this.renderPrimitive(p));
+    }
+
     private renderPrimitive(primitive: MeshPrimitive): void {
         if (!this.builtPrimitives.has(primitive)) {
             this.buildPrimitive(primitive);
         }
 
         if (primitive.indices) {
-            this.gl.drawElements(
-                primitive.mode,
-                primitive.indices.count,
-                primitive.indices.componentType,
-                primitive.indices.byteOffset,
-            );
+            if (this.wireframe) {
+                this.drawElementsWireframe(primitive);
+            } else {
+                this.drawElements(primitive);
+            }
         }
     }
 
@@ -90,14 +90,72 @@ export default class WebGLRenderer {
             const length = bufferView.byteLength;
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, glBuffer);
-            this.gl.bufferData(
-                this.gl.ELEMENT_ARRAY_BUFFER,
-                new Uint8Array(indexBuffer),
-                this.gl.STATIC_DRAW,
-                offset,
-                length,
-            );
+            if (this.wireframe) {
+                this.uploadWireframeIndices(primitive);
+            } else {
+                this.gl.bufferData(
+                    this.gl.ELEMENT_ARRAY_BUFFER,
+                    new Uint8Array(indexBuffer),
+                    this.gl.STATIC_DRAW,
+                    offset,
+                    length,
+                );
+            }
         }
+
+        this.builtPrimitives.add(primitive);
+    }
+
+    private uploadWireframeIndices(primitive: MeshPrimitive): void {
+        if (!primitive.indices) {
+            return;
+        }
+
+        const bufferView = primitive.indices.bufferView;
+        const TypedArrayConstructor = this.typedArrayConstructor(primitive.indices.componentType);
+        const sourceBuffer = new TypedArrayConstructor(
+            bufferView.buffer,
+            bufferView.byteOffset + primitive.indices.byteOffset,
+            bufferView.byteLength / TypedArrayConstructor.BYTES_PER_ELEMENT,
+        );
+        const destBuffer = new TypedArrayConstructor(
+            (bufferView.byteLength * 2) / TypedArrayConstructor.BYTES_PER_ELEMENT,
+        );
+
+        // Duplicate indices so it looks okay when drawn with GL_LINES
+        for (let i = 0; i < sourceBuffer.length; i += 3) {
+            destBuffer[i * 2] = sourceBuffer[i];
+            destBuffer[i * 2 + 1] = sourceBuffer[i + 1];
+            destBuffer[i * 2 + 2] = sourceBuffer[i + 1];
+            destBuffer[i * 2 + 3] = sourceBuffer[i + 2];
+            destBuffer[i * 2 + 4] = sourceBuffer[i + 2];
+            destBuffer[i * 2 + 5] = sourceBuffer[i];
+        }
+
+        this.gl.bufferData(
+            this.gl.ELEMENT_ARRAY_BUFFER,
+            new Uint8Array(destBuffer.buffer),
+            this.gl.STATIC_DRAW,
+            0,
+            destBuffer.byteLength,
+        );
+    }
+
+    private typedArrayConstructor(
+        componentType: ComponentType,
+    ): {
+        new (b: ArrayBuffer, offset?: number, length?: number): TypedArray;
+        new (length: number): TypedArray;
+        BYTES_PER_ELEMENT: number;
+    } {
+        return {
+            [ComponentType.BYTE]: Int8Array,
+            [ComponentType.UNSIGNED_BYTE]: Uint8Array,
+            [ComponentType.SHORT]: Int16Array,
+            [ComponentType.UNSIGNED_SHORT]: Uint16Array,
+            [ComponentType.UNSIGNED_INT]: Uint32Array,
+            [ComponentType.FLOAT]: Float32Array,
+        }[componentType];
     }
 
     private buildAttributes(attributes: PrimitiveAttributes): void {
@@ -132,6 +190,28 @@ export default class WebGLRenderer {
                 accessor.bufferView.byteOffset + accessor.byteOffset,
             );
         });
+    }
+
+    private drawElements(primitive: MeshPrimitive): void {
+        if (primitive.indices) {
+            this.gl.drawElements(
+                primitive.mode,
+                primitive.indices.count,
+                primitive.indices.componentType,
+                primitive.indices.byteOffset,
+            );
+        }
+    }
+
+    private drawElementsWireframe(primitive: MeshPrimitive): void {
+        if (primitive.indices) {
+            this.gl.drawElements(
+                this.gl.LINES,
+                primitive.indices.count * 2,
+                primitive.indices.componentType,
+                0,
+            );
+        }
     }
 
     private setMatrices(): void {
