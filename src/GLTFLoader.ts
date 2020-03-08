@@ -7,13 +7,9 @@ import {
     AttributeType,
     PrimitiveMode,
 } from './Mesh';
-import { GlTf } from '*.gltf';
+import { GlTf, Node as GlTfNode } from '*.gltf';
 import { SceneNode, Scene } from './Scene';
 import { mat4, quat } from 'gl-matrix';
-
-interface GlTFSceneNode extends SceneNode {
-    childIndices: Array<number>;
-}
 
 export default class GLTFLoader {
     private file: GlTf;
@@ -37,36 +33,44 @@ export default class GLTFLoader {
         return this.file.scene != null ? scenes[this.file.scene] : null;
     }
 
-    private loadScenes(nodeList: Array<GlTFSceneNode>): Array<Scene> {
+    private loadScenes(nodes: Array<SceneNode>): Array<Scene> {
         return (
             this.file.scenes?.map(scene => ({
-                nodes: scene.nodes?.map(n => this.setNodeChildren(nodeList[n], nodeList)) ?? [],
+                nodes: scene.nodes?.map(n => nodes[n]) ?? [],
             })) ?? []
         );
     }
 
-    private setNodeChildren(node: GlTFSceneNode, nodeList: Array<GlTFSceneNode>): SceneNode {
-        node.childIndices.forEach(childIndex => {
-            const child = nodeList[childIndex];
-            node.children.push(child);
-            this.setNodeChildren(child, nodeList);
-        });
-        delete node.childIndices;
+    private loadNodes(meshes: Array<Mesh>): Array<SceneNode> {
+        const nodeList: Array<SceneNode> = [];
+
+        return this.file.nodes?.map(node => this.createNode(node, nodeList, meshes)) ?? [];
+    }
+
+    private createNode(
+        gltfNode: GlTfNode,
+        nodeList: Array<SceneNode>,
+        meshList: Array<Mesh>,
+    ): SceneNode {
+        const node = {
+            mesh: gltfNode.mesh != null ? meshList[gltfNode.mesh] : undefined,
+            name: gltfNode.name,
+            children:
+                gltfNode.children?.map(
+                    n =>
+                        nodeList[n] ??
+                        this.createNode(
+                            (this.file.nodes as Array<GlTfNode>)[n],
+                            nodeList,
+                            meshList,
+                        ),
+                ) ?? [],
+            matrix: gltfNode.rotation
+                ? mat4.fromQuat(mat4.create(), gltfNode.rotation as quat)
+                : undefined,
+        };
+        nodeList.push(node);
         return node;
-    }
-
-    private loadNodes(meshes: Array<Mesh>): Array<GlTFSceneNode> {
-        return (
-            this.file.nodes?.map(node => ({
-                mesh: node.mesh != null ? meshes[node.mesh] : undefined,
-                name: node.name,
-                children: [],
-                childIndices: node.children ?? [],
-                matrix: node.rotation
-                    ? mat4.fromQuat(mat4.create(), node.rotation as quat)
-                    : undefined,
-            })) ?? []
-        );
     }
 
     private loadMeshes(accessors: Array<Accessor>): Array<Mesh> {
