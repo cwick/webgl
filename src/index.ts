@@ -30,21 +30,26 @@ const gl = getGLContext();
 gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 gl.clearColor(0, 0, 0, 1);
 
-let rotation = 0;
 let lastTime: DOMHighResTimeStamp | null = null;
 
 const renderer = new WebGLRenderer(gl);
 renderer.wireframe = true;
 let mesh: Mesh;
+let userTransform = mat4.identity(mat4.create());
 
 (function(): void {
-    const transform = mat4.create();
+    const rotationTransform = mat4.create();
+    const finalTransform = mat4.create();
+
+    let rotation = 0;
     function render(currentTime: DOMHighResTimeStamp): void {
         rotation += lastTime ? (currentTime - lastTime) * 0.01 : 0;
 
-        mat4.fromYRotation(transform, glMatrix.toRadian(rotation));
+        mat4.fromYRotation(rotationTransform, glMatrix.toRadian(rotation));
+        mat4.multiply(finalTransform, rotationTransform, userTransform);
+
         if (mesh) {
-            renderer.render(mesh, transform);
+            renderer.render(mesh, finalTransform);
         }
 
         lastTime = currentTime;
@@ -75,8 +80,12 @@ let mesh: Mesh;
         const file = await fetch(
             `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${name}/glTF-Embedded/${name}.gltf`,
         );
-        new GLTFLoader().load(await file.json()).then(m => {
-            mesh = m;
+        new GLTFLoader().load(await file.json()).then(scene => {
+            console.log(scene);
+            if (scene?.nodes[0].mesh) {
+                mesh = scene?.nodes[0].mesh;
+                userTransform = scene?.nodes[0].matrix || mat4.identity(userTransform);
+            }
         });
     });
     document.body.appendChild(select);

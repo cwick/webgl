@@ -9,6 +9,7 @@ import {
 } from './Mesh';
 import { GlTf } from '*.gltf';
 import { SceneNode, Scene } from './Scene';
+import { mat4, quat } from 'gl-matrix';
 
 interface GlTFSceneNode extends SceneNode {
     childIndices: Array<number>;
@@ -17,7 +18,7 @@ interface GlTFSceneNode extends SceneNode {
 export default class GLTFLoader {
     private file: GlTf;
 
-    async load(gltfFile: GlTf): Promise<Mesh> {
+    async load(gltfFile: GlTf): Promise<Scene | null> {
         this.file = gltfFile;
 
         const version = this.file.asset.version;
@@ -33,8 +34,7 @@ export default class GLTFLoader {
         );
 
         const scenes = this.loadScenes(this.loadNodes(meshes));
-        console.log(scenes);
-        return meshes[0];
+        return this.file.scene != null ? scenes[this.file.scene] : null;
     }
 
     private loadScenes(nodeList: Array<GlTFSceneNode>): Array<Scene> {
@@ -62,6 +62,9 @@ export default class GLTFLoader {
                 name: node.name,
                 children: [],
                 childIndices: node.children ?? [],
+                matrix: node.rotation
+                    ? mat4.fromQuat(mat4.create(), node.rotation as quat)
+                    : undefined,
             })) ?? []
         );
     }
