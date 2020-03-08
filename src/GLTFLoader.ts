@@ -8,6 +8,11 @@ import {
     PrimitiveMode,
 } from './Mesh';
 import { GlTf } from '*.gltf';
+import { SceneNode, Scene } from './Scene';
+
+interface GlTFSceneNode extends SceneNode {
+    childIndices: Array<number>;
+}
 
 export default class GLTFLoader {
     private file: GlTf;
@@ -21,33 +26,55 @@ export default class GLTFLoader {
         }
 
         // prettier-ignore
-        return this.loadMeshes(
+        const meshes = this.loadMeshes(
             this.loadAccessors(
                 this.loadBufferViews(
                     await this.loadBuffers())),
-        )[0];
+        );
+
+        const scenes = this.loadScenes(this.loadNodes(meshes));
+        console.log(scenes);
+        return meshes[0];
     }
 
-    private async loadBuffers(): Promise<Array<ArrayBuffer>> {
-        const bufferPromises = this.file.buffers?.map((buffer, i) => {
-            if (!buffer.uri) {
-                this.invalid(`missing buffer uri for buffer ${i}`);
-            }
-            return this.loadBufferFromURI(buffer.uri);
-        });
-        return await Promise.all(bufferPromises ?? []);
-    }
-
-    private loadBufferViews(buffers: Array<ArrayBuffer>): Array<BufferView> {
+    private loadScenes(nodeList: Array<GlTFSceneNode>): Array<Scene> {
         return (
-            this.file.bufferViews?.map(view =>
-                Object.assign(view, {
-                    buffer: buffers[view.buffer],
-                    target: view.target ?? BufferTarget.ARRAY_BUFFER,
-                    byteStride: view.byteStride ?? 0,
-                    byteOffset: view.byteOffset ?? 0,
-                }),
-            ) ?? []
+            this.file.scenes?.map(scene => ({
+                nodes: scene.nodes?.map(n => this.setNodeChildren(nodeList[n], nodeList)) ?? [],
+            })) ?? []
+        );
+    }
+
+    private setNodeChildren(node: GlTFSceneNode, nodeList: Array<GlTFSceneNode>): SceneNode {
+        node.childIndices.forEach(childIndex => {
+            const child = nodeList[childIndex];
+            node.children.push(child);
+            this.setNodeChildren(child, nodeList);
+        });
+        delete node.childIndices;
+        return node;
+    }
+
+    private loadNodes(meshes: Array<Mesh>): Array<GlTFSceneNode> {
+        return (
+            this.file.nodes?.map(node => ({
+                mesh: node.mesh != null ? meshes[node.mesh] : undefined,
+                name: node.name,
+                children: [],
+                childIndices: node.children ?? [],
+            })) ?? []
+        );
+    }
+
+    private loadMeshes(accessors: Array<Accessor>): Array<Mesh> {
+        return (
+            this.file.meshes?.map(mesh => ({
+                primitives: mesh.primitives.map(primitive => ({
+                    indices: primitive.indices != null ? accessors[primitive.indices] : undefined,
+                    attributes: this.mapPrimitiveAttributes(primitive.attributes, accessors),
+                    mode: primitive.mode ?? PrimitiveMode.TRIANGLES,
+                })),
+            })) ?? []
         );
     }
 
@@ -64,16 +91,27 @@ export default class GLTFLoader {
         );
     }
 
-    private loadMeshes(accessors: Array<Accessor>): Array<Mesh> {
+    private loadBufferViews(buffers: Array<ArrayBuffer>): Array<BufferView> {
         return (
-            this.file.meshes?.map(mesh => ({
-                primitives: mesh.primitives.map(primitive => ({
-                    indices: primitive.indices != null ? accessors[primitive.indices] : undefined,
-                    attributes: this.mapPrimitiveAttributes(primitive.attributes, accessors),
-                    mode: primitive.mode ?? PrimitiveMode.TRIANGLES,
-                })),
-            })) ?? []
+            this.file.bufferViews?.map(view =>
+                Object.assign(view, {
+                    buffer: buffers[view.buffer],
+                    target: view.target ?? BufferTarget.ARRAY_BUFFER,
+                    byteStride: view.byteStride ?? 0,
+                    byteOffset: view.byteOffset ?? 0,
+                }),
+            ) ?? []
         );
+    }
+
+    private async loadBuffers(): Promise<Array<ArrayBuffer>> {
+        const bufferPromises = this.file.buffers?.map((buffer, i) => {
+            if (!buffer.uri) {
+                this.invalid(`missing buffer uri for buffer ${i}`);
+            }
+            return this.loadBufferFromURI(buffer.uri);
+        });
+        return await Promise.all(bufferPromises ?? []);
     }
 
     private mapPrimitiveAttributes(
