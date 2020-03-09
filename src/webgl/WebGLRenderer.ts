@@ -40,20 +40,28 @@ export default class WebGLRenderer {
         this.glProgram.link(vertexShader, fragmentShader);
         this.glTransformLocation = this.getUniformLocation('u_transform');
         this.glProjectionLocation = this.getUniformLocation('u_projection');
+
+        this.glProgram.use();
+        const perspectiveMatrix = mat4.perspective(
+            mat4.create(),
+            glMatrix.toRadian(55 * (gl.canvas.height / gl.canvas.width)),
+            gl.canvas.width / gl.canvas.height,
+            0.1,
+            100,
+        );
+        gl.uniformMatrix4fv(this.glProjectionLocation, false, perspectiveMatrix);
     }
 
     public wireframe = false;
     private builtPrimitives: Set<MeshPrimitive> = new Set();
     private gl: WebGL2RenderingContext;
     private glProgram: GLProgram;
-    private userTransform: mat4;
     private glTransformLocation: WebGLUniformLocation;
     private glProjectionLocation: WebGLUniformLocation;
 
     render(mesh: Mesh, transform: mat4): void {
-        this.userTransform = transform;
         this.glProgram.use();
-        this.setMatrices();
+        this.gl.uniformMatrix4fv(this.glTransformLocation, false, transform);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         mesh.primitives.forEach(p => this.renderPrimitive(p));
     }
@@ -208,22 +216,6 @@ export default class WebGLRenderer {
                 0,
             );
         }
-    }
-
-    private setMatrices(): void {
-        const gl = this.gl;
-        const perspective = mat4.perspective(
-            mat4.create(),
-            glMatrix.toRadian(45 * (gl.canvas.height / gl.canvas.width)),
-            gl.canvas.width / gl.canvas.height,
-            0.1,
-            100,
-        );
-        gl.uniformMatrix4fv(this.glProjectionLocation, false, perspective);
-
-        const transform = mat4.fromTranslation(mat4.create(), [0, 0, -6]);
-        mat4.multiply(transform, transform, this.userTransform);
-        gl.uniformMatrix4fv(this.glTransformLocation, false, transform);
     }
 
     private getUniformLocation(uniform: string): WebGLUniformLocation {
