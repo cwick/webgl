@@ -2,12 +2,12 @@ import { Mesh } from './Mesh';
 import { mat4 } from 'gl-matrix';
 
 export interface Scene {
-    nodes: Array<SceneNode>;
+    readonly nodes: Array<SceneNode>;
 }
 
 export interface SceneNode {
-    mesh?: Mesh;
-    children: Array<SceneNode>;
-    name?: string;
-    matrix?: mat4;
+    readonly mesh?: Mesh;
+    readonly children: Array<SceneNode>;
+    readonly name?: string;
+    readonly matrix?: mat4;
 }

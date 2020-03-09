@@ -84,9 +84,9 @@ let modelTransform = mat4.identity(mat4.create());
         );
         new GLTFLoader().load(await file.json()).then(scene => {
             console.log(scene);
-            if (scene?.nodes[0].mesh) {
-                mesh = scene?.nodes[0].mesh;
-                modelTransform = scene?.nodes[0].matrix || mat4.identity(modelTransform);
+            if (scene.nodes.length > 0 && scene.nodes[0].mesh) {
+                mesh = scene.nodes[0].mesh;
+                modelTransform = scene.nodes[0].matrix || mat4.identity(modelTransform);
             }
         });
     });

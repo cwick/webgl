@@ -11,10 +11,14 @@ import { GlTf, Node as GlTfNode } from '*.gltf';
 import { SceneNode, Scene } from './Scene';
 import { mat4, quat } from 'gl-matrix';
 
+const EMPTY_SCENE = {
+    nodes: [],
+};
+
 export default class GLTFLoader {
     private file: GlTf;
 
-    async load(gltfFile: GlTf): Promise<Scene | null> {
+    async load(gltfFile: GlTf): Promise<Scene> {
         this.file = gltfFile;
 
         const version = this.file.asset.version;
@@ -30,7 +34,7 @@ export default class GLTFLoader {
         );
 
         const scenes = this.loadScenes(this.loadNodes(meshes));
-        return this.file.scene != null ? scenes[this.file.scene] : null;
+        return this.file.scene == null ? EMPTY_SCENE : scenes[this.file.scene];
     }
 
     private loadScenes(nodes: Array<SceneNode>): Array<Scene> {
