@@ -56,7 +56,7 @@ export default class GLTFLoader {
         nodeList: Array<SceneNode>,
         meshList: Array<Mesh>,
     ): SceneNode {
-        const node = {
+        const node: SceneNode = {
             mesh: gltfNode.mesh != null ? meshList[gltfNode.mesh] : undefined,
             name: gltfNode.name,
             children:
@@ -69,7 +69,7 @@ export default class GLTFLoader {
                             meshList,
                         ),
                 ) ?? [],
-            matrix: gltfNode.rotation
+            localMatrix: gltfNode.rotation
                 ? mat4.fromQuat(mat4.create(), gltfNode.rotation as quat)
                 : undefined,
         };

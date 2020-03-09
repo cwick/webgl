@@ -86,7 +86,7 @@ let modelTransform = mat4.identity(mat4.create());
             console.log(scene);
             if (scene.nodes.length > 0 && scene.nodes[0].mesh) {
                 mesh = scene.nodes[0].mesh;
-                modelTransform = scene.nodes[0].matrix || mat4.identity(modelTransform);
+                modelTransform = scene.nodes[0].localMatrix || mat4.identity(modelTransform);
             }
         });
     });

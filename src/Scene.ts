@@ -9,5 +9,5 @@ export interface SceneNode {
     readonly mesh?: Mesh;
     readonly children: Array<SceneNode>;
     readonly name?: string;
-    readonly matrix?: mat4;
+    readonly localMatrix?: mat4;
 }

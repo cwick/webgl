@@ -3,8 +3,8 @@ export interface Mesh {
 }
 
 export interface MeshPrimitive {
-    readonly indices?: Accessor;
     readonly attributes: PrimitiveAttributes;
+    readonly indices?: Accessor;
     readonly mode: PrimitiveMode;
 }
 
@@ -14,28 +14,28 @@ export interface PrimitiveAttributes {
 
 export interface Accessor {
     readonly bufferView: BufferView;
-    readonly componentType: ComponentType;
-    readonly type: AttributeType;
-    readonly normalized: boolean;
-    readonly count: number;
     readonly byteOffset: number;
+    readonly componentType: ComponentType;
+    readonly count: number;
+    readonly normalized: boolean;
+    readonly type: AttributeType;
 }
 
 export interface BufferView {
     readonly buffer: ArrayBuffer;
-    readonly target: BufferTarget;
-    readonly byteOffset: number;
     readonly byteLength: number;
+    readonly byteOffset: number;
     readonly byteStride: number;
+    readonly target: BufferTarget;
 }
 
 export enum ComponentType {
     BYTE = 5120,
-    UNSIGNED_BYTE = 5121,
-    SHORT = 5122,
-    UNSIGNED_SHORT = 5123,
-    UNSIGNED_INT = 5125,
     FLOAT = 5126,
+    SHORT = 5122,
+    UNSIGNED_BYTE = 5121,
+    UNSIGNED_INT = 5125,
+    UNSIGNED_SHORT = 5123,
 }
 
 export enum AttributeType {
