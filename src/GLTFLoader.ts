@@ -9,7 +9,7 @@ import {
 } from './Mesh';
 import { GlTf, Node as GlTfNode } from '*.gltf';
 import { SceneNode, Scene } from './Scene';
-import { mat4, quat } from 'gl-matrix';
+import { mat4, quat, vec3 } from 'gl-matrix';
 
 const IDENTITY_MATRIX = mat4.identity(mat4.create());
 
@@ -65,12 +65,33 @@ export default class GLTFLoader {
                             meshList,
                         ),
                 ) ?? [],
-            localMatrix: gltfNode.rotation
-                ? mat4.fromQuat(mat4.create(), gltfNode.rotation as quat)
-                : IDENTITY_MATRIX,
+            localMatrix: this.loadTranslationRotationScale(gltfNode),
         };
         nodeList.push(node);
         return node;
+    }
+
+    private loadTranslationRotationScale(node: GlTfNode): mat4 {
+        if (node.matrix) {
+            return node.matrix as mat4;
+        }
+
+        if (!node.translation && !node.rotation && !node.scale) {
+            return IDENTITY_MATRIX;
+        }
+
+        const translation = mat4.fromTranslation(
+            mat4.create(),
+            (node.translation ?? [0, 0, 0]) as vec3,
+        );
+        const rotation = mat4.fromQuat(mat4.create(), (node.rotation ?? [0, 0, 0, 1]) as quat);
+        const scale = mat4.fromScaling(mat4.create(), (node.scale ?? [1, 1, 1]) as vec3);
+
+        const matrix = mat4.create();
+        mat4.multiply(matrix, translation, rotation);
+        mat4.multiply(matrix, matrix, scale);
+
+        return matrix;
     }
 
     private loadMeshes(accessors: Array<Accessor>): Array<Mesh> {
