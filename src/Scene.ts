@@ -12,7 +12,7 @@ interface RootNode extends SceneNode {
     localMatrix: mat4;
 }
 
-interface RenderBackend {
+export interface RenderBackend {
     render(mesh: Mesh, transform: mat4): void;
 }
 

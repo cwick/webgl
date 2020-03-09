@@ -1,4 +1,5 @@
 import { Mesh, MeshPrimitive, PrimitiveAttributes, ComponentType } from '../Mesh';
+import { RenderBackend } from '../Scene';
 import GLProgram from './GLProgram';
 import GLShader from './GLShader';
 import { mat4, glMatrix } from 'gl-matrix';
@@ -28,7 +29,7 @@ void main() {
 }
 `;
 
-export default class WebGLRenderer {
+export default class WebGLRenderBackend implements RenderBackend {
     constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
         this.glProgram = new GLProgram(gl);

@@ -1,7 +1,7 @@
 import { mat4 } from 'gl-matrix';
 import { glMatrix } from 'gl-matrix';
 import GLTFLoader from './GLTFLoader';
-import WebGLRenderer from './webgl/WebGLRenderer';
+import WebGLRenderBackend from './webgl/WebGLRenderBackend';
 import { Scene } from './Scene';
 
 const canvasElement = document.createElement('canvas');
@@ -30,7 +30,7 @@ gl.clearColor(0, 0, 0, 1);
 
 let lastTime: DOMHighResTimeStamp | null = null;
 
-const renderer = new WebGLRenderer(gl);
+const renderer = new WebGLRenderBackend(gl);
 renderer.wireframe = true;
 let scene: Scene;
 
@@ -43,7 +43,7 @@ let scene: Scene;
         mat4.fromYRotation(rootTransform, glMatrix.toRadian(rotation));
         mat4.multiply(
             rootTransform,
-            mat4.fromTranslation(mat4.create(), [0, 0, -4]),
+            mat4.fromTranslation(mat4.create(), [0, 0, -8]),
             rootTransform,
         );
 
