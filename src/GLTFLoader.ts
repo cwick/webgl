@@ -11,9 +11,7 @@ import { GlTf, Node as GlTfNode } from '*.gltf';
 import { SceneNode, Scene } from './Scene';
 import { mat4, quat } from 'gl-matrix';
 
-const EMPTY_SCENE = {
-    nodes: [],
-};
+const IDENTITY_MATRIX = mat4.identity(mat4.create());
 
 export default class GLTFLoader {
     private file: GlTf;
@@ -34,14 +32,12 @@ export default class GLTFLoader {
         );
 
         const scenes = this.loadScenes(this.loadNodes(meshes));
-        return this.file.scene == null ? EMPTY_SCENE : scenes[this.file.scene];
+        return this.file.scene == null ? new Scene([]) : scenes[this.file.scene];
     }
 
     private loadScenes(nodes: Array<SceneNode>): Array<Scene> {
         return (
-            this.file.scenes?.map(scene => ({
-                nodes: scene.nodes?.map(n => nodes[n]) ?? [],
-            })) ?? []
+            this.file.scenes?.map(scene => new Scene(scene.nodes?.map(n => nodes[n]) ?? [])) ?? []
         );
     }
 
@@ -71,7 +67,7 @@ export default class GLTFLoader {
                 ) ?? [],
             localMatrix: gltfNode.rotation
                 ? mat4.fromQuat(mat4.create(), gltfNode.rotation as quat)
-                : undefined,
+                : IDENTITY_MATRIX,
         };
         nodeList.push(node);
         return node;

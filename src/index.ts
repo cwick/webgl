@@ -2,9 +2,7 @@ import { mat4 } from 'gl-matrix';
 import { glMatrix } from 'gl-matrix';
 import GLTFLoader from './GLTFLoader';
 import WebGLRenderer from './webgl/WebGLRenderer';
-import example from '../assets/example.gltf';
-import box from '../assets/box.gltf';
-import { Mesh } from './Mesh';
+import { Scene } from './Scene';
 
 const canvasElement = document.createElement('canvas');
 canvasElement.width = 800;
@@ -34,24 +32,24 @@ let lastTime: DOMHighResTimeStamp | null = null;
 
 const renderer = new WebGLRenderer(gl);
 renderer.wireframe = true;
-let mesh: Mesh;
-let modelTransform = mat4.identity(mat4.create());
+let scene: Scene;
 
 (function(): void {
-    const rotationTransform = mat4.create();
-    const finalTransform = mat4.create();
-    const translationMatrix = mat4.fromTranslation(mat4.create(), [0, 0, -5]);
-
     let rotation = 0;
+
     function render(currentTime: DOMHighResTimeStamp): void {
         rotation += lastTime ? (currentTime - lastTime) * 0.01 : 0;
+        const rootTransform = mat4.create();
+        mat4.fromYRotation(rootTransform, glMatrix.toRadian(rotation));
+        mat4.multiply(
+            rootTransform,
+            mat4.fromTranslation(mat4.create(), [0, 0, -4]),
+            rootTransform,
+        );
 
-        mat4.fromYRotation(rotationTransform, glMatrix.toRadian(rotation));
-        mat4.multiply(finalTransform, rotationTransform, modelTransform);
-        mat4.multiply(finalTransform, translationMatrix, finalTransform);
-
-        if (mesh) {
-            renderer.render(mesh, finalTransform);
+        if (scene) {
+            scene.rootNode.localMatrix = rootTransform;
+            scene.render(renderer);
         }
 
         lastTime = currentTime;
@@ -82,12 +80,8 @@ let modelTransform = mat4.identity(mat4.create());
         const file = await fetch(
             `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${name}/glTF-Embedded/${name}.gltf`,
         );
-        new GLTFLoader().load(await file.json()).then(scene => {
-            console.log(scene);
-            if (scene.nodes.length > 0 && scene.nodes[0].mesh) {
-                mesh = scene.nodes[0].mesh;
-                modelTransform = scene.nodes[0].localMatrix || mat4.identity(modelTransform);
-            }
+        new GLTFLoader().load(await file.json()).then(s => {
+            scene = s;
         });
     });
     document.body.appendChild(select);
