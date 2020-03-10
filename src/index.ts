@@ -49,7 +49,7 @@ let scene: Scene;
 
         if (scene) {
             scene.rootNode.localMatrix = rootTransform;
-            scene.render(renderer);
+            scene.render();
         }
 
         lastTime = currentTime;
@@ -81,7 +81,10 @@ let scene: Scene;
             `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${name}/glTF-Embedded/${name}.gltf`,
         );
         new GLTFLoader().load(await file.json()).then(s => {
+            scene?.destroy();
             scene = s;
+            scene.renderBackend = renderer;
+            console.log(s);
         });
     });
     document.body.appendChild(select);

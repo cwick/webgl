@@ -14,6 +14,7 @@ interface RootNode extends SceneNode {
 
 export interface RenderBackend {
     render(mesh: Mesh, transform: mat4): void;
+    destroyMesh(mesh: Mesh): void;
 }
 
 export class Scene {
@@ -25,19 +26,31 @@ export class Scene {
     }
 
     readonly rootNode: RootNode;
+    renderBackend?: RenderBackend;
 
-    render(backend: RenderBackend): void {
-        this.backend = backend;
+    destroy(): void {
+        this.destroyNode(this.rootNode);
+    }
+
+    render(): void {
         this.renderNode(this.rootNode, mat4.identity(mat4.create()));
+    }
+
+    private destroyNode(node: SceneNode): void {
+        if (node.mesh) {
+            this.renderBackend?.destroyMesh(node.mesh);
+        }
+
+        node.children.forEach(child => {
+            this.destroyNode(child);
+        });
     }
 
     private renderNode(node: SceneNode, parentMatrix: mat4): void {
         const worldMatrix = mat4.multiply(mat4.create(), parentMatrix, node.localMatrix);
         if (node.mesh) {
-            this.backend.render(node.mesh, worldMatrix);
+            this.renderBackend?.render(node.mesh, worldMatrix);
         }
         node.children.forEach(child => this.renderNode(child, worldMatrix));
     }
-
-    private backend: RenderBackend;
 }

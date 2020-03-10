@@ -54,7 +54,9 @@ export default class WebGLRenderBackend implements RenderBackend {
     }
 
     public wireframe = false;
-    private builtPrimitives: Set<MeshPrimitive> = new Set();
+    private createdPrimitives: Set<MeshPrimitive> = new Set();
+    private glVertexBuffers: Map<ArrayBuffer, WebGLBuffer> = new Map();
+    // private glElementBuffers: Map<MeshPrimitive, WebGLBuffer> = new Map();
     private gl: WebGL2RenderingContext;
     private glProgram: GLProgram;
     private glTransformLocation: WebGLUniformLocation;
@@ -67,8 +69,21 @@ export default class WebGLRenderBackend implements RenderBackend {
         mesh.primitives.forEach(p => this.renderPrimitive(p));
     }
 
+    destroyMesh(mesh: Mesh): void {
+        mesh.primitives.forEach(primitive => {
+            Object.values(primitive.attributes).forEach(accessor => {
+                const buffer = accessor.bufferView.buffer;
+                const glBuffer = this.glVertexBuffers.get(buffer);
+                if (glBuffer) {
+                    this.gl.deleteBuffer(glBuffer);
+                    this.glVertexBuffers.delete(buffer);
+                }
+            });
+        });
+    }
+
     private renderPrimitive(primitive: MeshPrimitive): void {
-        if (!this.builtPrimitives.has(primitive)) {
+        if (!this.createdPrimitives.has(primitive)) {
             this.buildPrimitive(primitive);
         }
 
@@ -94,10 +109,9 @@ export default class WebGLRenderBackend implements RenderBackend {
             const glBuffer = this.gl.createBuffer();
             const bufferView = primitive.indices.bufferView;
             const indexBuffer = bufferView.buffer;
-            const offset = bufferView.byteOffset;
-            const length = bufferView.byteLength;
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, glBuffer);
+
             if (this.wireframe) {
                 this.uploadWireframeIndices(primitive);
             } else {
@@ -105,13 +119,13 @@ export default class WebGLRenderBackend implements RenderBackend {
                     this.gl.ELEMENT_ARRAY_BUFFER,
                     new Uint8Array(indexBuffer),
                     this.gl.STATIC_DRAW,
-                    offset,
-                    length,
+                    bufferView.byteOffset,
+                    bufferView.byteLength,
                 );
             }
         }
 
-        this.builtPrimitives.add(primitive);
+        this.createdPrimitives.add(primitive);
     }
 
     private uploadWireframeIndices(primitive: MeshPrimitive): void {
@@ -149,39 +163,21 @@ export default class WebGLRenderBackend implements RenderBackend {
         );
     }
 
-    private typedArrayConstructor(
-        componentType: ComponentType,
-    ): {
-        new (b: ArrayBuffer, offset?: number, length?: number): TypedArray;
-        new (length: number): TypedArray;
-        BYTES_PER_ELEMENT: number;
-    } {
-        return {
-            [ComponentType.BYTE]: Int8Array,
-            [ComponentType.UNSIGNED_BYTE]: Uint8Array,
-            [ComponentType.SHORT]: Int16Array,
-            [ComponentType.UNSIGNED_SHORT]: Uint16Array,
-            [ComponentType.UNSIGNED_INT]: Uint32Array,
-            [ComponentType.FLOAT]: Float32Array,
-        }[componentType];
-    }
-
     private buildAttributes(attributes: PrimitiveAttributes): void {
         Object.entries(attributes).forEach(([attribute, accessor]) => {
+            // TODO: Support more attributes
             if (attribute != 'POSITION') {
                 return;
             }
 
             const buffer = accessor.bufferView.buffer;
 
-            // Create and upload vertex data to GL buffer
-            const glBuffer = this.gl.createBuffer();
+            let glBuffer = this.glVertexBuffers.get(buffer) ?? null;
             if (!glBuffer) {
-                throw new Error('Error creating GL buffer');
+                glBuffer = this.createGLVertexBuffer(buffer);
+                this.glVertexBuffers.set(buffer, glBuffer);
             }
-
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
 
             const glAttributeLocation = this.glProgram.getAttribLocation(attribute);
             this.gl.enableVertexAttribArray(glAttributeLocation);
@@ -195,6 +191,16 @@ export default class WebGLRenderBackend implements RenderBackend {
                 accessor.bufferView.byteOffset + accessor.byteOffset,
             );
         });
+    }
+
+    private createGLVertexBuffer(buffer: ArrayBuffer): WebGLBuffer {
+        const glBuffer = this.gl.createBuffer();
+        if (!glBuffer) {
+            throw new Error('Error creating GL buffer');
+        }
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
+        return glBuffer;
     }
 
     private drawElements(primitive: MeshPrimitive): void {
@@ -225,5 +231,22 @@ export default class WebGLRenderBackend implements RenderBackend {
             throw new Error(`Error getting uniform location for '${uniform}'`);
         }
         return location;
+    }
+
+    private typedArrayConstructor(
+        componentType: ComponentType,
+    ): {
+        new (b: ArrayBuffer, offset?: number, length?: number): TypedArray;
+        new (length: number): TypedArray;
+        BYTES_PER_ELEMENT: number;
+    } {
+        return {
+            [ComponentType.BYTE]: Int8Array,
+            [ComponentType.UNSIGNED_BYTE]: Uint8Array,
+            [ComponentType.SHORT]: Int16Array,
+            [ComponentType.UNSIGNED_SHORT]: Uint16Array,
+            [ComponentType.UNSIGNED_INT]: Uint32Array,
+            [ComponentType.FLOAT]: Float32Array,
+        }[componentType];
     }
 }
