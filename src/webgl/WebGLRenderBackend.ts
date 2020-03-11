@@ -135,6 +135,7 @@ export default class WebGLRenderBackend implements RenderBackend {
         this.createdPrimitives.add(primitive);
     }
 
+    // TODO: Move wireframe-building code out of WebGLRenderBackend (it's not specific to WebGL)
     private uploadWireframeIndices(primitive: MeshPrimitive): void {
         if (!primitive.indices) {
             return;
@@ -177,11 +178,7 @@ export default class WebGLRenderBackend implements RenderBackend {
                 return;
             }
 
-            const buffer = accessor.bufferView.buffer;
-
-            const glBuffer = this.getOrCreateGLVertexBuffer(buffer);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
+            this.uploadVertexData(accessor.bufferView.buffer);
 
             const glAttributeLocation = this.glProgram.getAttribLocation(attribute);
             this.gl.enableVertexAttribArray(glAttributeLocation);
@@ -196,16 +193,18 @@ export default class WebGLRenderBackend implements RenderBackend {
         });
     }
 
-    private getOrCreateGLVertexBuffer(buffer: ArrayBuffer): WebGLBuffer {
+    private uploadVertexData(buffer: ArrayBuffer): void {
         let glBuffer = this.glVertexBuffers.get(buffer) ?? null;
         if (!glBuffer) {
             glBuffer = this.gl.createBuffer();
             if (!glBuffer) {
                 throw new Error('Error creating GL vertex buffer');
             }
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
             this.glVertexBuffers.set(buffer, glBuffer);
         }
-        return glBuffer;
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
     }
 
     private getOrCreateGLVertexArrayObject(primitive: MeshPrimitive): WebGLVertexArrayObject {
