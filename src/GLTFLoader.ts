@@ -102,6 +102,7 @@ export default class GLTFLoader {
                     attributes: this.mapPrimitiveAttributes(primitive.attributes, accessors),
                     mode: primitive.mode ?? PrimitiveMode.TRIANGLES,
                 })),
+                name: mesh.name,
             })) ?? []
         );
     }

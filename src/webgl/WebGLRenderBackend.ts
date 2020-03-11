@@ -56,6 +56,8 @@ export default class WebGLRenderBackend implements RenderBackend {
     public wireframe = false;
     private createdPrimitives: Set<MeshPrimitive> = new Set();
     private glVertexBuffers: Map<ArrayBuffer, WebGLBuffer> = new Map();
+    private glVertexArrayObjects: Map<MeshPrimitive, WebGLVertexArrayObject> = new Map();
+    // TODO: track buffers used for vertex indices
     // private glElementBuffers: Map<MeshPrimitive, WebGLBuffer> = new Map();
     private gl: WebGL2RenderingContext;
     private glProgram: GLProgram;
@@ -65,7 +67,6 @@ export default class WebGLRenderBackend implements RenderBackend {
     render(mesh: Mesh, transform: mat4): void {
         this.glProgram.use();
         this.gl.uniformMatrix4fv(this.glTransformLocation, false, transform);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         mesh.primitives.forEach(p => this.renderPrimitive(p));
     }
 
@@ -79,6 +80,12 @@ export default class WebGLRenderBackend implements RenderBackend {
                     this.glVertexBuffers.delete(buffer);
                 }
             });
+
+            const vao = this.glVertexArrayObjects.get(primitive);
+            if (vao) {
+                this.gl.deleteVertexArray(vao);
+                this.glVertexArrayObjects.delete(primitive);
+            }
         });
     }
 
@@ -88,6 +95,7 @@ export default class WebGLRenderBackend implements RenderBackend {
         }
 
         if (primitive.indices) {
+            this.gl.bindVertexArray(this.glVertexArrayObjects.get(primitive) ?? null);
             if (this.wireframe) {
                 this.drawElementsWireframe(primitive);
             } else {
@@ -97,9 +105,13 @@ export default class WebGLRenderBackend implements RenderBackend {
     }
 
     private buildPrimitive(primitive: MeshPrimitive): void {
-        const vao = this.gl.createVertexArray();
+        let vao = this.glVertexArrayObjects.get(primitive) ?? null;
         if (!vao) {
-            throw new Error('Error creating GL Vertex Array Object');
+            vao = this.gl.createVertexArray();
+            if (!vao) {
+                throw new Error('Error creating GL Vertex Array Object');
+            }
+            this.glVertexArrayObjects.set(primitive, vao);
         }
         this.gl.bindVertexArray(vao);
 

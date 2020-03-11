@@ -1,5 +1,6 @@
 export interface Mesh {
     readonly primitives: Array<MeshPrimitive>;
+    readonly name?: string;
 }
 
 export interface MeshPrimitive {
