@@ -105,14 +105,7 @@ export default class WebGLRenderBackend implements RenderBackend {
     }
 
     private buildPrimitive(primitive: MeshPrimitive): void {
-        let vao = this.glVertexArrayObjects.get(primitive) ?? null;
-        if (!vao) {
-            vao = this.gl.createVertexArray();
-            if (!vao) {
-                throw new Error('Error creating GL Vertex Array Object');
-            }
-            this.glVertexArrayObjects.set(primitive, vao);
-        }
+        const vao = this.getOrCreateGLVertexArrayObject(primitive);
         this.gl.bindVertexArray(vao);
 
         this.buildAttributes(primitive.attributes);
@@ -184,16 +177,12 @@ export default class WebGLRenderBackend implements RenderBackend {
 
             const buffer = accessor.bufferView.buffer;
 
-            let glBuffer = this.glVertexBuffers.get(buffer) ?? null;
-            if (!glBuffer) {
-                glBuffer = this.createGLVertexBuffer(buffer);
-                this.glVertexBuffers.set(buffer, glBuffer);
-            }
+            const glBuffer = this.getOrCreateGLVertexBuffer(buffer);
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
 
             const glAttributeLocation = this.glProgram.getAttribLocation(attribute);
             this.gl.enableVertexAttribArray(glAttributeLocation);
-
             this.gl.vertexAttribPointer(
                 glAttributeLocation,
                 accessor.type,
@@ -205,14 +194,28 @@ export default class WebGLRenderBackend implements RenderBackend {
         });
     }
 
-    private createGLVertexBuffer(buffer: ArrayBuffer): WebGLBuffer {
-        const glBuffer = this.gl.createBuffer();
+    private getOrCreateGLVertexBuffer(buffer: ArrayBuffer): WebGLBuffer {
+        let glBuffer = this.glVertexBuffers.get(buffer) ?? null;
         if (!glBuffer) {
-            throw new Error('Error creating GL buffer');
+            glBuffer = this.gl.createBuffer();
+            if (!glBuffer) {
+                throw new Error('Error creating GL vertex buffer');
+            }
+            this.glVertexBuffers.set(buffer, glBuffer);
         }
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
         return glBuffer;
+    }
+
+    private getOrCreateGLVertexArrayObject(primitive: MeshPrimitive): WebGLVertexArrayObject {
+        let vao = this.glVertexArrayObjects.get(primitive) ?? null;
+        if (!vao) {
+            vao = this.gl.createVertexArray();
+            if (!vao) {
+                throw new Error('Error creating GL Vertex Array Object');
+            }
+            this.glVertexArrayObjects.set(primitive, vao);
+        }
+        return vao;
     }
 
     private drawElements(primitive: MeshPrimitive): void {

@@ -12,6 +12,7 @@ module.exports = {
     rules: {
         // Place to specify ESLint rules. Can be used to overwrite rules specified from the extended configs
         // e.g. "@typescript-eslint/explicit-function-return-type": "off",
+        'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
     },
     ignorePatterns: ['*.js'],
 };
