@@ -94,13 +94,15 @@ export default class WebGLRenderBackend implements RenderBackend {
             this.buildPrimitive(primitive);
         }
 
+        this.gl.bindVertexArray(this.glVertexArrayObjects.get(primitive) ?? null);
         if (primitive.indices) {
-            this.gl.bindVertexArray(this.glVertexArrayObjects.get(primitive) ?? null);
             if (this.wireframe) {
                 this.drawElementsWireframe(primitive);
             } else {
                 this.drawElements(primitive);
             }
+        } else {
+            this.drawArrays(primitive);
         }
     }
 
@@ -240,6 +242,16 @@ export default class WebGLRenderBackend implements RenderBackend {
         }
     }
 
+    private drawArrays(primitive: MeshPrimitive): void {
+        const accessor = primitive.attributes.POSITION;
+
+        this.gl.drawArrays(
+            primitive.mode,
+            accessor.byteOffset / this.componentSize(accessor.componentType),
+            accessor.count,
+        );
+    }
+
     private getUniformLocation(uniform: string): WebGLUniformLocation {
         const location = this.glProgram.getUniformLocation(uniform);
         if (location == null) {
@@ -262,6 +274,17 @@ export default class WebGLRenderBackend implements RenderBackend {
             [ComponentType.UNSIGNED_SHORT]: Uint16Array,
             [ComponentType.UNSIGNED_INT]: Uint32Array,
             [ComponentType.FLOAT]: Float32Array,
+        }[componentType];
+    }
+
+    private componentSize(componentType: ComponentType): number {
+        return {
+            [ComponentType.BYTE]: 1,
+            [ComponentType.FLOAT]: 4,
+            [ComponentType.SHORT]: 2,
+            [ComponentType.UNSIGNED_BYTE]: 1,
+            [ComponentType.UNSIGNED_INT]: 4,
+            [ComponentType.UNSIGNED_SHORT]: 2,
         }[componentType];
     }
 }
