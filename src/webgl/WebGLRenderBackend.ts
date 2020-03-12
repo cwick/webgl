@@ -8,12 +8,14 @@ type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Uint32Arra
 const vertexShaderSource = `#version 300 es
  
 in vec3 POSITION;
+out vec4 viewPosition;
 uniform mat4 u_transform;
 uniform mat4 u_projection;
 uniform mat4 u_view;
 
 void main() {
-  gl_Position = u_projection * u_view * u_transform * vec4(POSITION,1);
+  viewPosition = u_view * u_transform * vec4(POSITION,1);
+  gl_Position = u_projection * viewPosition;
 }
 `;
 
@@ -24,9 +26,15 @@ const fragmentShaderSource = `#version 300 es
 precision mediump float;
  
 out vec4 outColor;
+in vec4 viewPosition;
  
 void main() {
-    outColor = vec4(gl_FragCoord.x / 800.0, gl_FragCoord.y / 600.0, 1, 1.0);
+    vec3 xTangent = dFdx( vec3(viewPosition) );
+    vec3 yTangent = dFdy( vec3(viewPosition) );
+    vec3 faceNormal = normalize( cross( xTangent, yTangent ) );
+    // outColor = vec4(gl_FragCoord.x / 800.0, gl_FragCoord.y / 600.0, 1, 1.0);
+    float lightValue = (faceNormal.y + 1.0) / 2.0;
+    outColor = vec4(vec2(lightValue), 1, 1);
 }
 `;
 
@@ -44,10 +52,11 @@ export default class WebGLRenderBackend implements RenderBackend {
         this.glProjectionLocation = this.getUniformLocation('u_projection');
         this.glViewLocation = this.getUniformLocation('u_view');
 
+        this.gl.enable(gl.CULL_FACE);
+        this.gl.enable(gl.DEPTH_TEST);
         this.glProgram.use();
     }
 
-    public wireframe = false;
     public viewMatrix = mat4.identity(mat4.create());
     public projectionMatrix = mat4.identity(mat4.create());
     private createdPrimitives: Set<MeshPrimitive> = new Set();
@@ -95,11 +104,7 @@ export default class WebGLRenderBackend implements RenderBackend {
 
         this.gl.bindVertexArray(this.glVertexArrayObjects.get(primitive) ?? null);
         if (primitive.indices) {
-            if (this.wireframe) {
-                this.drawElementsWireframe(primitive);
-            } else {
-                this.drawElements(primitive);
-            }
+            this.drawElements(primitive);
         } else {
             this.drawArrays(primitive);
         }
@@ -118,56 +123,16 @@ export default class WebGLRenderBackend implements RenderBackend {
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, glBuffer);
 
-            if (this.wireframe) {
-                this.uploadWireframeIndices(primitive);
-            } else {
-                this.gl.bufferData(
-                    this.gl.ELEMENT_ARRAY_BUFFER,
-                    new Uint8Array(indexBuffer),
-                    this.gl.STATIC_DRAW,
-                    bufferView.byteOffset,
-                    bufferView.byteLength,
-                );
-            }
+            this.gl.bufferData(
+                this.gl.ELEMENT_ARRAY_BUFFER,
+                new Uint8Array(indexBuffer),
+                this.gl.STATIC_DRAW,
+                bufferView.byteOffset,
+                bufferView.byteLength,
+            );
         }
 
         this.createdPrimitives.add(primitive);
-    }
-
-    // TODO: Move wireframe-building code out of WebGLRenderBackend (it's not specific to WebGL)
-    private uploadWireframeIndices(primitive: MeshPrimitive): void {
-        if (!primitive.indices) {
-            return;
-        }
-
-        const bufferView = primitive.indices.bufferView;
-        const TypedArrayConstructor = this.typedArrayConstructor(primitive.indices.componentType);
-        const sourceBuffer = new TypedArrayConstructor(
-            bufferView.buffer,
-            bufferView.byteOffset + primitive.indices.byteOffset,
-            bufferView.byteLength / TypedArrayConstructor.BYTES_PER_ELEMENT,
-        );
-        const destBuffer = new TypedArrayConstructor(
-            (bufferView.byteLength * 2) / TypedArrayConstructor.BYTES_PER_ELEMENT,
-        );
-
-        // Duplicate indices so it looks okay when drawn with GL_LINES
-        for (let i = 0; i < sourceBuffer.length; i += 3) {
-            destBuffer[i * 2] = sourceBuffer[i];
-            destBuffer[i * 2 + 1] = sourceBuffer[i + 1];
-            destBuffer[i * 2 + 2] = sourceBuffer[i + 1];
-            destBuffer[i * 2 + 3] = sourceBuffer[i + 2];
-            destBuffer[i * 2 + 4] = sourceBuffer[i + 2];
-            destBuffer[i * 2 + 5] = sourceBuffer[i];
-        }
-
-        this.gl.bufferData(
-            this.gl.ELEMENT_ARRAY_BUFFER,
-            new Uint8Array(destBuffer.buffer),
-            this.gl.STATIC_DRAW,
-            0,
-            destBuffer.byteLength,
-        );
     }
 
     private buildAttributes(attributes: PrimitiveAttributes): void {
@@ -225,17 +190,6 @@ export default class WebGLRenderBackend implements RenderBackend {
                 primitive.indices.count,
                 primitive.indices.componentType,
                 primitive.indices.byteOffset,
-            );
-        }
-    }
-
-    private drawElementsWireframe(primitive: MeshPrimitive): void {
-        if (primitive.indices) {
-            this.gl.drawElements(
-                this.gl.LINES,
-                primitive.indices.count * 2,
-                primitive.indices.componentType,
-                0,
             );
         }
     }
