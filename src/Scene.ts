@@ -1,5 +1,5 @@
 import { Mesh } from './Mesh';
-import { mat4 } from 'gl-matrix';
+import { mat4, glMatrix } from 'gl-matrix';
 
 export interface SceneNode {
     readonly mesh?: Mesh;
@@ -12,9 +12,28 @@ interface RootNode extends SceneNode {
     localMatrix: mat4;
 }
 
+class Camera {
+    constructor();
+    constructor(fovDegrees?: number, znear?: number, zfar?: number) {
+        this.fov = fovDegrees ?? 60;
+        this.znear = znear ?? 0.05;
+        this.zfar = zfar ?? 100;
+    }
+
+    readonly fov: number;
+    readonly zfar: number;
+    readonly znear: number;
+}
+
+interface Viewport {
+    width: number;
+    height: number;
+}
+
 export interface RenderBackend {
     render(mesh: Mesh, transform: mat4): void;
     destroyMesh(mesh: Mesh): void;
+    projectionMatrix: mat4;
 }
 
 export class Scene {
@@ -23,8 +42,11 @@ export class Scene {
             children: nodes,
             localMatrix: mat4.identity(mat4.create()),
         };
+        this.camera = new Camera();
     }
 
+    camera: Camera;
+    viewport?: Viewport;
     readonly rootNode: RootNode;
     renderBackend?: RenderBackend;
 
@@ -33,6 +55,19 @@ export class Scene {
     }
 
     render(): void {
+        if (!this.renderBackend) {
+            return;
+        }
+
+        if (this.viewport) {
+            mat4.perspective(
+                this.renderBackend.projectionMatrix,
+                glMatrix.toRadian(this.camera.fov),
+                this.viewport.width / this.viewport.height,
+                this.camera.znear,
+                this.camera.zfar,
+            );
+        }
         this.renderNode(this.rootNode, mat4.identity(mat4.create()));
     }
 

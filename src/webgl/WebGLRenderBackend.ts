@@ -2,7 +2,7 @@ import { Mesh, MeshPrimitive, PrimitiveAttributes, ComponentType } from '../Mesh
 import { RenderBackend } from '../Scene';
 import GLProgram from './GLProgram';
 import GLShader from './GLShader';
-import { mat4, glMatrix } from 'gl-matrix';
+import { mat4 } from 'gl-matrix';
 
 type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Uint32Array | Float32Array;
 const vertexShaderSource = `#version 300 es
@@ -10,9 +10,10 @@ const vertexShaderSource = `#version 300 es
 in vec3 POSITION;
 uniform mat4 u_transform;
 uniform mat4 u_projection;
+uniform mat4 u_view;
 
 void main() {
-  gl_Position = u_projection * u_transform * vec4(POSITION,1);
+  gl_Position = u_projection * u_view * u_transform * vec4(POSITION,1);
 }
 `;
 
@@ -41,19 +42,14 @@ export default class WebGLRenderBackend implements RenderBackend {
         this.glProgram.link(vertexShader, fragmentShader);
         this.glTransformLocation = this.getUniformLocation('u_transform');
         this.glProjectionLocation = this.getUniformLocation('u_projection');
+        this.glViewLocation = this.getUniformLocation('u_view');
 
         this.glProgram.use();
-        const perspectiveMatrix = mat4.perspective(
-            mat4.create(),
-            glMatrix.toRadian(55 * (gl.canvas.height / gl.canvas.width)),
-            gl.canvas.width / gl.canvas.height,
-            0.1,
-            100,
-        );
-        gl.uniformMatrix4fv(this.glProjectionLocation, false, perspectiveMatrix);
     }
 
     public wireframe = false;
+    public viewMatrix = mat4.identity(mat4.create());
+    public projectionMatrix = mat4.identity(mat4.create());
     private createdPrimitives: Set<MeshPrimitive> = new Set();
     private glVertexBuffers: Map<ArrayBuffer, WebGLBuffer> = new Map();
     private glVertexArrayObjects: Map<MeshPrimitive, WebGLVertexArrayObject> = new Map();
@@ -63,10 +59,13 @@ export default class WebGLRenderBackend implements RenderBackend {
     private glProgram: GLProgram;
     private glTransformLocation: WebGLUniformLocation;
     private glProjectionLocation: WebGLUniformLocation;
+    private glViewLocation: WebGLUniformLocation;
 
     render(mesh: Mesh, transform: mat4): void {
         this.glProgram.use();
         this.gl.uniformMatrix4fv(this.glTransformLocation, false, transform);
+        this.gl.uniformMatrix4fv(this.glViewLocation, false, this.viewMatrix);
+        this.gl.uniformMatrix4fv(this.glProjectionLocation, false, this.projectionMatrix);
         mesh.primitives.forEach(p => this.renderPrimitive(p));
     }
 

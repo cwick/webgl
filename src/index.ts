@@ -31,7 +31,7 @@ gl.clearColor(0, 0, 0, 1);
 let lastTime: DOMHighResTimeStamp | null = null;
 
 const renderer = new WebGLRenderBackend(gl);
-renderer.wireframe = true;
+renderer.wireframe = false;
 let scene: Scene;
 
 (function(): void {
@@ -42,14 +42,10 @@ let scene: Scene;
         rotation += lastTime ? (currentTime - lastTime) * 0.01 : 0;
         const rootTransform = mat4.create();
         mat4.fromYRotation(rootTransform, glMatrix.toRadian(rotation));
-        mat4.multiply(
-            rootTransform,
-            mat4.fromTranslation(mat4.create(), [0, 0, -18]),
-            rootTransform,
-        );
 
         if (scene) {
             scene.rootNode.localMatrix = rootTransform;
+            renderer.viewMatrix = mat4.fromTranslation(mat4.create(), [0, 0, -8]);
             scene.render();
         }
 
@@ -85,6 +81,7 @@ let scene: Scene;
             scene?.destroy();
             scene = s;
             scene.renderBackend = renderer;
+            scene.viewport = { width: gl.canvas.width, height: gl.canvas.height };
             console.log(s);
         });
     });
