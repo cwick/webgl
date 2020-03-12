@@ -8,7 +8,7 @@ import {
     PrimitiveMode,
 } from './Mesh';
 import { GlTf, Node as GlTfNode } from '*.gltf';
-import { SceneNode, Scene } from './Scene';
+import { SceneNode, Scene, Camera } from './Scene';
 import { mat4, quat, vec3 } from 'gl-matrix';
 
 const IDENTITY_MATRIX = mat4.identity(mat4.create());
@@ -31,8 +31,14 @@ export default class GLTFLoader {
                     await this.loadBuffers())),
         );
 
-        const scenes = this.loadScenes(this.loadNodes(meshes));
-        return this.file.scene == null ? new Scene([]) : scenes[this.file.scene];
+        const cameras = this.loadCameras();
+        const scenes = this.loadScenes(this.loadNodes(meshes, cameras));
+        const scene = this.file.scene == null ? new Scene([]) : scenes[this.file.scene];
+        const defaultCamera = this.findFirstCamera(scene.rootNode);
+        if (defaultCamera) {
+            scene.camera = defaultCamera;
+        }
+        return scene;
     }
 
     private loadScenes(nodes: Array<SceneNode>): Array<Scene> {
@@ -41,16 +47,17 @@ export default class GLTFLoader {
         );
     }
 
-    private loadNodes(meshes: Array<Mesh>): Array<SceneNode> {
+    private loadNodes(meshes: Array<Mesh>, cameras: Array<Camera>): Array<SceneNode> {
         const nodeList: Array<SceneNode> = [];
 
-        return this.file.nodes?.map(node => this.createNode(node, nodeList, meshes)) ?? [];
+        return this.file.nodes?.map(node => this.createNode(node, nodeList, meshes, cameras)) ?? [];
     }
 
     private createNode(
         gltfNode: GlTfNode,
         nodeList: Array<SceneNode>,
         meshList: Array<Mesh>,
+        cameraList: Array<Camera>,
     ): SceneNode {
         const node: SceneNode = {
             mesh: gltfNode.mesh != null ? meshList[gltfNode.mesh] : undefined,
@@ -63,9 +70,11 @@ export default class GLTFLoader {
                             (this.file.nodes as Array<GlTfNode>)[n],
                             nodeList,
                             meshList,
+                            cameraList,
                         ),
                 ) ?? [],
             localMatrix: this.loadTranslationRotationScale(gltfNode),
+            camera: gltfNode.camera != null ? cameraList[gltfNode.camera] : undefined,
         };
         nodeList.push(node);
         return node;
@@ -143,6 +152,21 @@ export default class GLTFLoader {
         return await Promise.all(bufferPromises ?? []);
     }
 
+    private loadCameras(): Array<Camera> {
+        return (
+            this.file.cameras?.map(c => {
+                if (c.type === 'orthographic' || !c.perspective) {
+                    return new Camera();
+                }
+                return new Camera(
+                    c.perspective.yfov * (180 / Math.PI),
+                    c.perspective.znear,
+                    c.perspective.zfar,
+                );
+            }) ?? []
+        );
+    }
+
     private mapPrimitiveAttributes(
         attributes: {
             [k: string]: number;
@@ -155,6 +179,21 @@ export default class GLTFLoader {
                 accessors[accessorIndex],
             ]),
         );
+    }
+
+    private findFirstCamera(node: SceneNode): Camera | null {
+        if (node.camera) {
+            return node.camera;
+        }
+
+        for (let i = 0; i < node.children.length; i++) {
+            const camera = this.findFirstCamera(node.children[i]);
+            if (camera) {
+                return camera;
+            }
+        }
+
+        return null;
     }
 
     private async loadBufferFromURI(uri: string): Promise<ArrayBuffer> {

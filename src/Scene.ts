@@ -2,7 +2,9 @@ import { Mesh } from './Mesh';
 import { mat4, glMatrix } from 'gl-matrix';
 
 export interface SceneNode {
+    // TODO: make mesh and camera inherit from SceneNode and delete these properties
     readonly mesh?: Mesh;
+    readonly camera?: Camera;
     readonly children: Array<SceneNode>;
     readonly name?: string;
     readonly localMatrix: mat4;
@@ -12,12 +14,13 @@ interface RootNode extends SceneNode {
     localMatrix: mat4;
 }
 
-class Camera {
+export class Camera {
     constructor();
+    constructor(fovDegrees: number, znear: number, zfar?: number);
     constructor(fovDegrees?: number, znear?: number, zfar?: number) {
         this.fov = fovDegrees ?? 60;
         this.znear = znear ?? 0.05;
-        this.zfar = zfar ?? 100;
+        this.zfar = zfar ?? Infinity;
     }
 
     readonly fov: number;
