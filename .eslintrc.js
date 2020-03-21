@@ -14,5 +14,4 @@ module.exports = {
         // e.g. "@typescript-eslint/explicit-function-return-type": "off",
         'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
     },
-    ignorePatterns: ['*.js'],
 };

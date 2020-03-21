@@ -3,6 +3,10 @@ import { glMatrix } from 'gl-matrix';
 import GLTFLoader from './GLTFLoader';
 import WebGLRenderBackend from './webgl/WebGLRenderBackend';
 import { Scene } from './Scene';
+import Vue from 'vue';
+import App from './App.vue';
+
+const vue = new Vue(App);
 
 const canvasElement = document.createElement('canvas');
 canvasElement.width = 800;
@@ -31,7 +35,7 @@ gl.clearColor(0, 0, 0, 1);
 let lastTime: DOMHighResTimeStamp | null = null;
 
 const renderer = new WebGLRenderBackend(gl);
-renderer.wireframe = false;
+renderer.viewMatrix = mat4.fromTranslation(mat4.create(), [0, 0, -3]);
 let scene: Scene;
 
 (function(): void {
@@ -45,7 +49,6 @@ let scene: Scene;
 
         if (scene) {
             scene.rootNode.localMatrix = rootTransform;
-            renderer.viewMatrix = mat4.fromTranslation(mat4.create(), [0, 0, -8]);
             scene.render();
         }
 
