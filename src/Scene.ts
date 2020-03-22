@@ -31,8 +31,9 @@ export class Camera {
 export interface RenderBackend {
     render(mesh: Mesh, transform: mat4): void;
     destroyMesh(mesh: Mesh): void;
-    projectionMatrix: mat4;
     clear(): void;
+    projectionMatrix: mat4;
+    viewMatrix: mat4;
 }
 
 export class Scene {
