@@ -63,7 +63,6 @@ export default class App extends Vue {
     initialize(): void {
         const gl = this.createGLContext();
         this.renderer = new WebGLRenderBackend(gl);
-        this.renderer.viewMatrix = mat4.fromTranslation(mat4.create(), [0, 0, -3]);
     }
 
     createGLContext(): WebGL2RenderingContext {

@@ -65,9 +65,7 @@ export class Scene {
             );
         }
 
-        // TODO: set view matrix here
-        console.log(this.camera);
-        console.log(this.rootNode);
+        this.renderBackend.viewMatrix = this.calculateViewMatrix();
         this.renderBackend.clear();
         this.renderNode(this.rootNode, mat4.identity(mat4.create()));
     }
@@ -88,5 +86,20 @@ export class Scene {
             this.renderBackend?.render(node.mesh, worldMatrix);
         }
         node.children.forEach(child => this.renderNode(child, worldMatrix));
+    }
+
+    private calculateViewMatrix(): mat4 {
+        let node: SceneNode | undefined = this.camera;
+        const matrix = mat4.copy(mat4.create(), this.camera.localMatrix);
+
+        while (node != null) {
+            if (node.parent) {
+                mat4.multiply(matrix, node.parent.localMatrix, matrix);
+            }
+            node = node.parent;
+        }
+
+        mat4.invert(matrix, matrix);
+        return matrix;
     }
 }
