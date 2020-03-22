@@ -50,27 +50,37 @@ export default class GLTFLoader {
     }
 
     private loadNodes(meshes: Array<Mesh>, cameras: Array<Camera>): Array<SceneNode> {
-        const nodeList: Array<SceneNode> = [];
+        const nodeList: Array<SceneNode> = new Array<SceneNode>(this.file.nodes?.length ?? 0);
 
-        return this.file.nodes?.map(node => this.createNode(node, nodeList, meshes, cameras)) ?? [];
+        return (
+            this.file.nodes?.map((node, n) =>
+                this.createNode(node, n, nodeList, meshes, cameras),
+            ) ?? []
+        );
     }
 
     private createNode(
         gltfNode: GlTfNode,
+        gltfNodeIndex: number,
         nodeList: Array<SceneNode>,
         meshList: Array<Mesh>,
         cameraList: Array<Camera>,
     ): SceneNode {
+        if (nodeList[gltfNodeIndex]) {
+            return nodeList[gltfNodeIndex];
+        }
+
         let node: SceneNode;
         const nodeProps = {
             mesh: gltfNode.mesh != null ? meshList[gltfNode.mesh] : undefined,
-            name: gltfNode.name,
+            name: gltfNode.name ?? `node${gltfNodeIndex}`,
             children:
                 gltfNode.children?.map(
                     n =>
                         nodeList[n] ??
                         this.createNode(
                             (this.file.nodes as Array<GlTfNode>)[n],
+                            n,
                             nodeList,
                             meshList,
                             cameraList,
@@ -86,7 +96,7 @@ export default class GLTFLoader {
         }
 
         Object.assign(node, nodeProps);
-        nodeList.push(node);
+        nodeList[gltfNodeIndex] = node;
 
         return node;
     }
