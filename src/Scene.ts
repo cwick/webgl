@@ -28,11 +28,6 @@ export class Camera {
     readonly znear: number;
 }
 
-interface Viewport {
-    width: number;
-    height: number;
-}
-
 export interface RenderBackend {
     render(mesh: Mesh, transform: mat4): void;
     destroyMesh(mesh: Mesh): void;
@@ -50,7 +45,7 @@ export class Scene {
     }
 
     camera: Camera;
-    viewport?: Viewport;
+    canvas?: HTMLCanvasElement;
     readonly rootNode: RootNode;
     renderBackend?: RenderBackend;
 
@@ -63,11 +58,11 @@ export class Scene {
             return;
         }
 
-        if (this.viewport) {
+        if (this.canvas) {
             mat4.perspective(
                 this.renderBackend.projectionMatrix,
                 glMatrix.toRadian(this.camera.fov),
-                this.viewport.width / this.viewport.height,
+                this.canvas.width / this.canvas.height,
                 this.camera.znear,
                 this.camera.zfar,
             );
