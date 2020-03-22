@@ -3,9 +3,7 @@
         <canvas ref="canvas" width="800" height="600"></canvas>
 
         <select v-model="selectedModel">
-            <option v-for="model in models" :key="model.name" v-bind:value="model">
-                {{ model.name }}
-            </option>
+            <option v-for="model in models" :key="model.name" v-bind:value="model">{{ model.name }}</option>
         </select>
     </div>
 </template>
@@ -34,7 +32,7 @@ export default class App extends Vue {
     models: Array<GLTFModel> = [];
     renderer: RenderBackend | null = null;
 
-    $refs: {
+    $refs!: {
         canvas: HTMLCanvasElement;
     };
 
@@ -42,7 +40,7 @@ export default class App extends Vue {
         const file = await fetch(
             `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${e.name}/glTF-Embedded/${e.name}.gltf`,
         );
-        new GLTFLoader().load(await file.json()).then(scene => {
+        new GLTFLoader(await file.json()).load().then(scene => {
             if (this.renderer) {
                 scene.renderBackend = this.renderer;
             }

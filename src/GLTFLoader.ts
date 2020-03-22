@@ -16,9 +16,11 @@ const IDENTITY_MATRIX = mat4.identity(mat4.create());
 export default class GLTFLoader {
     private file: GlTf;
 
-    async load(gltfFile: GlTf): Promise<Scene> {
+    constructor(gltfFile: GlTf) {
         this.file = gltfFile;
+    }
 
+    async load(): Promise<Scene> {
         const version = this.file.asset.version;
         if (!version.startsWith('2.')) {
             this.notSupported(`glTF version ${version} not supported.`);
@@ -59,7 +61,8 @@ export default class GLTFLoader {
         meshList: Array<Mesh>,
         cameraList: Array<Camera>,
     ): SceneNode {
-        const node: SceneNode = {
+        let node: SceneNode;
+        const nodeProps = {
             mesh: gltfNode.mesh != null ? meshList[gltfNode.mesh] : undefined,
             name: gltfNode.name,
             children:
@@ -74,9 +77,17 @@ export default class GLTFLoader {
                         ),
                 ) ?? [],
             localMatrix: this.loadTranslationRotationScale(gltfNode),
-            camera: gltfNode.camera != null ? cameraList[gltfNode.camera] : undefined,
         };
+
+        if (gltfNode.camera != null) {
+            node = cameraList[gltfNode.camera];
+        } else {
+            node = new SceneNode();
+        }
+
+        Object.assign(node, nodeProps);
         nodeList.push(node);
+
         return node;
     }
 
@@ -182,8 +193,8 @@ export default class GLTFLoader {
     }
 
     private findFirstCamera(node: SceneNode): Camera | null {
-        if (node.camera) {
-            return node.camera;
+        if (node instanceof Camera) {
+            return node;
         }
 
         for (let i = 0; i < node.children.length; i++) {
