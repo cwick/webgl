@@ -29,9 +29,6 @@ function getGLContext(): WebGL2RenderingContext {
 }
 const gl = getGLContext();
 
-gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-gl.clearColor(0, 0, 0, 1);
-
 let lastTime: DOMHighResTimeStamp | null = null;
 
 const renderer = new WebGLRenderBackend(gl);

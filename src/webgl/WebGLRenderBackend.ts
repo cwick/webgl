@@ -52,6 +52,9 @@ export default class WebGLRenderBackend implements RenderBackend {
         this.glProjectionLocation = this.getUniformLocation('u_projection');
         this.glViewLocation = this.getUniformLocation('u_view');
 
+        this.gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        this.gl.clearColor(0, 0, 0, 1);
+
         this.gl.enable(gl.CULL_FACE);
         this.gl.enable(gl.DEPTH_TEST);
         this.glProgram.use();
