@@ -97,6 +97,7 @@ export default class GLTFLoader {
 
         Object.assign(node, nodeProps);
         nodeList[gltfNodeIndex] = node;
+        node.children.forEach(child => Object.assign(child, { parent: node }));
 
         return node;
     }

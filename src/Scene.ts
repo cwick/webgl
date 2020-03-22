@@ -5,6 +5,7 @@ export class SceneNode {
     // TODO: make mesh inherit from SceneNode and delete these properties
     readonly mesh?: Mesh;
     readonly children: Array<SceneNode> = [];
+    readonly parent?: SceneNode;
     readonly name?: string;
     readonly localMatrix: mat4 = mat4.identity(mat4.create());
 }
@@ -34,10 +35,9 @@ export interface RenderBackend {
 
 export class Scene {
     constructor(nodes: Array<SceneNode>) {
-        this.rootNode = {
-            children: nodes,
-            localMatrix: mat4.identity(mat4.create()),
-        };
+        this.rootNode = new SceneNode();
+        this.rootNode.children.push(...nodes);
+        this.rootNode.children.forEach(child => Object.assign(child, { parent: this.rootNode }));
         this.camera = new Camera();
     }
 
@@ -66,6 +66,8 @@ export class Scene {
         }
 
         // TODO: set view matrix here
+        console.log(this.camera);
+        console.log(this.rootNode);
         this.renderBackend.clear();
         this.renderNode(this.rootNode, mat4.identity(mat4.create()));
     }
@@ -81,9 +83,6 @@ export class Scene {
     }
 
     private renderNode(node: SceneNode, parentMatrix: mat4): void {
-        if (node instanceof Camera) {
-            console.log(node.localMatrix);
-        }
         const worldMatrix = mat4.multiply(mat4.create(), parentMatrix, node.localMatrix);
         if (node.mesh) {
             this.renderBackend?.render(node.mesh, worldMatrix);
