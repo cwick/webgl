@@ -97,6 +97,10 @@ export default class WebGLRenderBackend implements RenderBackend {
         });
     }
 
+    clear(): void {
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    }
+
     private renderPrimitive(primitive: MeshPrimitive): void {
         if (!this.createdPrimitives.has(primitive)) {
             this.buildPrimitive(primitive);

@@ -37,6 +37,7 @@ export interface RenderBackend {
     render(mesh: Mesh, transform: mat4): void;
     destroyMesh(mesh: Mesh): void;
     projectionMatrix: mat4;
+    clear(): void;
 }
 
 export class Scene {
@@ -71,6 +72,7 @@ export class Scene {
                 this.camera.zfar,
             );
         }
+        this.renderBackend.clear();
         this.renderNode(this.rootNode, mat4.identity(mat4.create()));
     }
 

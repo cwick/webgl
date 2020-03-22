@@ -42,7 +42,6 @@ let scene: Scene;
     let rotation = 0;
 
     function render(currentTime: DOMHighResTimeStamp): void {
-        gl.clear(gl.COLOR_BUFFER_BIT);
         rotation += lastTime ? (currentTime - lastTime) * 0.01 : 0;
         const rootTransform = mat4.create();
         mat4.fromYRotation(rootTransform, glMatrix.toRadian(rotation));
