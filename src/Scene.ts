@@ -10,10 +10,6 @@ export interface SceneNode {
     readonly localMatrix: mat4;
 }
 
-interface RootNode extends SceneNode {
-    localMatrix: mat4;
-}
-
 export class Camera {
     constructor();
     constructor(fovDegrees: number, znear: number, zfar?: number);
@@ -47,7 +43,7 @@ export class Scene {
 
     camera: Camera;
     canvas?: HTMLCanvasElement;
-    readonly rootNode: RootNode;
+    readonly rootNode: SceneNode;
     renderBackend?: RenderBackend;
 
     destroy(): void {

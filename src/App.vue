@@ -39,7 +39,6 @@ export default class App extends Vue {
     };
 
     async onModelChanged(e: GLTFModel) {
-        console.log(e);
         const file = await fetch(
             `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${e.name}/glTF-Embedded/${e.name}.gltf`,
         );
@@ -48,7 +47,6 @@ export default class App extends Vue {
                 scene.renderBackend = this.renderer;
             }
             scene.canvas = this.$refs.canvas;
-            console.log(scene);
             scene.render();
         });
     }
