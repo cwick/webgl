@@ -91,11 +91,11 @@ export default class GLTFLoader {
 
         if (gltfNode.camera != null) {
             node = cameraList[gltfNode.camera];
+            Object.assign(node, nodeProps);
         } else {
-            node = new SceneNode();
+            node = nodeProps;
         }
 
-        Object.assign(node, nodeProps);
         nodeList[gltfNodeIndex] = node;
         node.children.forEach(child => Object.assign(child, { parent: node }));
 

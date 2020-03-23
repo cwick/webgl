@@ -57,7 +57,7 @@ export default class App extends Vue {
             Boolean(e.variants['glTF-Embedded']),
         );
         this.initialize();
-        this.selectedModel = this.models.find((m: GLTFModel) => m.name === 'DamagedHelmet') ?? null;
+        this.selectedModel = this.models.find((m: GLTFModel) => m.name === 'GearboxAssy') ?? null;
     }
 
     initialize(): void {

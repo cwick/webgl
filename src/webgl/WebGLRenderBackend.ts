@@ -73,9 +73,9 @@ export default class WebGLRenderBackend implements RenderBackend {
     private glProjectionLocation: WebGLUniformLocation;
     private glViewLocation: WebGLUniformLocation;
 
-    render(mesh: Mesh, transform: mat4): void {
+    render(mesh: Mesh, worldMatrix: mat4): void {
         this.glProgram.use();
-        this.gl.uniformMatrix4fv(this.glTransformLocation, false, transform);
+        this.gl.uniformMatrix4fv(this.glTransformLocation, false, worldMatrix);
         this.gl.uniformMatrix4fv(this.glViewLocation, false, this.viewMatrix);
         this.gl.uniformMatrix4fv(this.glProjectionLocation, false, this.projectionMatrix);
         mesh.primitives.forEach(p => this.renderPrimitive(p));

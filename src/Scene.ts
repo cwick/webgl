@@ -1,32 +1,33 @@
 import { Mesh } from './Mesh';
 import { mat4, glMatrix } from 'gl-matrix';
 
-export class SceneNode {
+export interface SceneNode {
     // TODO: make mesh inherit from SceneNode and delete these properties
     readonly mesh?: Mesh;
-    readonly children: Array<SceneNode> = [];
-    readonly parent?: SceneNode;
+    readonly children: Array<SceneNode>;
+    parent?: SceneNode;
     readonly name?: string;
-    readonly localMatrix: mat4 = mat4.identity(mat4.create());
+    readonly localMatrix: mat4;
 }
 
-export class Camera extends SceneNode {
+export class Camera implements SceneNode {
     constructor();
     constructor(fovDegrees: number, znear: number, zfar?: number);
     constructor(fovDegrees?: number, znear?: number, zfar?: number) {
-        super();
         this.fov = fovDegrees ?? 60;
         this.znear = znear ?? 0.05;
         this.zfar = zfar ?? Infinity;
     }
 
+    readonly localMatrix = mat4.identity(mat4.create());
+    readonly children = [];
     readonly fov: number;
     readonly zfar: number;
     readonly znear: number;
 }
 
 export interface RenderBackend {
-    render(mesh: Mesh, transform: mat4): void;
+    render(mesh: Mesh, worldMatrix: mat4): void;
     destroyMesh(mesh: Mesh): void;
     clear(): void;
     projectionMatrix: mat4;
@@ -35,9 +36,8 @@ export interface RenderBackend {
 
 export class Scene {
     constructor(nodes: Array<SceneNode>) {
-        this.rootNode = new SceneNode();
-        this.rootNode.children.push(...nodes);
-        this.rootNode.children.forEach(child => Object.assign(child, { parent: this.rootNode }));
+        this.rootNode = { children: nodes, localMatrix: mat4.identity(mat4.create()) };
+        this.rootNode.children.forEach(child => (child.parent = this.rootNode));
         this.camera = new Camera();
     }
 
