@@ -62,6 +62,13 @@ export default class WebGLRenderBackend implements RenderBackend {
 
     public viewMatrix = mat4.identity(mat4.create());
     public projectionMatrix = mat4.identity(mat4.create());
+    public stats = {
+        drawCalls: 0,
+        primitives: 0,
+        vertexBuffers: 0,
+        elementBuffers: 0,
+    };
+
     private createdPrimitives: Set<MeshPrimitive> = new Set();
     private glVertexBuffers: Map<ArrayBuffer, WebGLBuffer> = new Map();
     private glVertexArrayObjects: Map<MeshPrimitive, WebGLVertexArrayObject> = new Map();
@@ -102,6 +109,7 @@ export default class WebGLRenderBackend implements RenderBackend {
 
     clear(): void {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        this.resetRenderStats();
     }
 
     private renderPrimitive(primitive: MeshPrimitive): void {
@@ -129,6 +137,7 @@ export default class WebGLRenderBackend implements RenderBackend {
             const indexBuffer = bufferView.buffer;
 
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, glBuffer);
+            this.stats.elementBuffers++;
 
             this.gl.bufferData(
                 this.gl.ELEMENT_ARRAY_BUFFER,
@@ -139,6 +148,7 @@ export default class WebGLRenderBackend implements RenderBackend {
             );
         }
 
+        this.stats.primitives++;
         this.createdPrimitives.add(primitive);
     }
 
@@ -171,6 +181,7 @@ export default class WebGLRenderBackend implements RenderBackend {
             if (!glBuffer) {
                 throw new Error('Error creating GL vertex buffer');
             }
+            this.stats.vertexBuffers++;
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, glBuffer);
             this.gl.bufferData(this.gl.ARRAY_BUFFER, buffer, this.gl.STATIC_DRAW);
             this.glVertexBuffers.set(buffer, glBuffer);
@@ -192,6 +203,7 @@ export default class WebGLRenderBackend implements RenderBackend {
 
     private drawElements(primitive: MeshPrimitive): void {
         if (primitive.indices) {
+            this.stats.drawCalls++;
             this.gl.drawElements(
                 primitive.mode,
                 primitive.indices.count,
@@ -204,6 +216,7 @@ export default class WebGLRenderBackend implements RenderBackend {
     private drawArrays(primitive: MeshPrimitive): void {
         const accessor = primitive.attributes.POSITION;
 
+        this.stats.drawCalls++;
         this.gl.drawArrays(
             primitive.mode,
             accessor.byteOffset / this.componentSize(accessor.componentType),
@@ -245,5 +258,12 @@ export default class WebGLRenderBackend implements RenderBackend {
             [ComponentType.UNSIGNED_INT]: 4,
             [ComponentType.UNSIGNED_SHORT]: 2,
         }[componentType];
+    }
+
+    private resetRenderStats(): void {
+        const stats = this.stats;
+        (Object.keys(this.stats) as Array<keyof typeof stats>).forEach(
+            key => (this.stats[key] = 0),
+        );
     }
 }

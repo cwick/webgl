@@ -32,6 +32,12 @@ export interface RenderBackend {
     clear(): void;
     projectionMatrix: mat4;
     viewMatrix: mat4;
+    stats: {
+        drawCalls: number;
+        primitives: number;
+        vertexBuffers: number;
+        elementBuffers: number;
+    };
 }
 
 export class Scene {

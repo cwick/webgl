@@ -3,8 +3,17 @@
         <canvas ref="canvas" width="800" height="600"></canvas>
 
         <select v-model="selectedModel">
-            <option v-for="model in models" :key="model.name" v-bind:value="model">{{ model.name }}</option>
+            <option v-for="model in models" :key="model.name" :value="model">{{ model.name }}</option>
         </select>
+        <table>
+            <caption>Stats</caption>
+            <tbody>
+                <tr v-for="statName in Object.keys(renderStats)" :key="statName">
+                    <th>{{statName}}</th>
+                    <td>{{renderStats[statName]}}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </template>
 
@@ -22,6 +31,10 @@ interface GLTFModel {
     variants: { [s: string]: object };
 }
 
+interface RenderStat {
+    [key: string]: any;
+}
+
 @Component({
     watch: {
         selectedModel: 'onModelChanged',
@@ -30,7 +43,8 @@ interface GLTFModel {
 export default class App extends Vue {
     selectedModel: GLTFModel | null = null;
     models: Array<GLTFModel> = [];
-    renderer: RenderBackend | null = null;
+    renderBackend: RenderBackend | null = null;
+    renderStats: { [key: string]: any } = {};
 
     $refs!: {
         canvas: HTMLCanvasElement;
@@ -41,11 +55,10 @@ export default class App extends Vue {
             `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${e.name}/glTF-Embedded/${e.name}.gltf`,
         );
         new GLTFLoader(await file.json()).load().then(scene => {
-            if (this.renderer) {
-                scene.renderBackend = this.renderer;
-            }
+            scene.renderBackend = this.renderBackend!;
             scene.canvas = this.$refs.canvas;
             scene.render();
+            this.renderStats = this.renderBackend!.stats;
         });
     }
 
@@ -62,7 +75,7 @@ export default class App extends Vue {
 
     initialize(): void {
         const gl = this.createGLContext();
-        this.renderer = new WebGLRenderBackend(gl);
+        this.renderBackend = new WebGLRenderBackend(gl);
     }
 
     createGLContext(): WebGL2RenderingContext {
